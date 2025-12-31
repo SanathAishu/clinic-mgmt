@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: doctor-service
+  config:
+    import: optional:configserver:http://localhost:8888
+  cloud:
+    config:
+      fail-fast: false
+      retry:
+        max-attempts: 3
+        initial-interval: 1000

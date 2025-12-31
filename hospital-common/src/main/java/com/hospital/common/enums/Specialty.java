@@ -1,0 +1,20 @@
+package com.hospital.common.enums;
+
+public enum Specialty {
+    CARDIOLOGY,
+    NEUROLOGY,
+    ORTHOPEDICS,
+    PEDIATRICS,
+    DERMATOLOGY,
+    PSYCHIATRY,
+    ONCOLOGY,
+    PULMONOLOGY,
+    NEPHROLOGY,
+    GASTROENTEROLOGY,
+    ENDOCRINOLOGY,
+    OPHTHALMOLOGY,
+    ENT,
+    GENERAL_MEDICINE,
+    GENERAL_SURGERY,
+    EMERGENCY_MEDICINE
+}

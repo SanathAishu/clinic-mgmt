@@ -1,0 +1,25 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: facility-service
+  jpa:
+    properties:
+      hibernate:
+        default_schema: facility_service
+
+# Saga Configuration
+saga:
+  timeout: 30000  # 30 seconds
+  max-retries: 3
+
+# Room Reminder Scheduler
+room:
+  reminder:
+    cron: "0 0 10 * * ?"  # Every day at 10 AM
+    days-before-discharge: 2
+
+logging:
+  level:
+    com.hospital.facility: DEBUG

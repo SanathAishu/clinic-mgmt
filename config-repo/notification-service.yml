@@ -1,0 +1,41 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: notification-service
+  jpa:
+    properties:
+      hibernate:
+        default_schema: notification_service
+
+  # Mail Configuration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:your-email@gmail.com}
+    password: ${MAIL_PASSWORD:your-app-password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+# Email Templates
+notification:
+  email:
+    from: ${MAIL_FROM:Hospital Management <noreply@hospital.com>}
+    templates:
+      appointment-created: classpath:templates/appointment-created.html
+      appointment-reminder: classpath:templates/appointment-reminder.html
+      appointment-cancelled: classpath:templates/appointment-cancelled.html
+      prescription-created: classpath:templates/prescription-created.html
+      admission-confirmed: classpath:templates/admission-confirmed.html
+
+logging:
+  level:
+    com.hospital.notification: DEBUG

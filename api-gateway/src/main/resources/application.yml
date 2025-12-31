@@ -1,0 +1,113 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    config:
+      uri: http://localhost:8888
+      fail-fast: true
+      retry:
+        max-attempts: 5
+        initial-interval: 1000
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        # Auth Service Routes
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/auth/(?<segment>.*), /${segment}
+
+        # Patient Service Routes
+        - id: patient-service
+          uri: lb://PATIENT-SERVICE
+          predicates:
+            - Path=/api/patients/**
+          filters:
+            - RewritePath=/api/patients/(?<segment>.*), /${segment}
+            - AuthenticationFilter
+
+        # Doctor Service Routes
+        - id: doctor-service
+          uri: lb://DOCTOR-SERVICE
+          predicates:
+            - Path=/api/doctors/**
+          filters:
+            - RewritePath=/api/doctors/(?<segment>.*), /${segment}
+            - AuthenticationFilter
+
+        # Appointment Service Routes
+        - id: appointment-service
+          uri: lb://APPOINTMENT-SERVICE
+          predicates:
+            - Path=/api/appointments/**
+          filters:
+            - RewritePath=/api/appointments/(?<segment>.*), /${segment}
+            - AuthenticationFilter
+
+        # Medical Records Service Routes
+        - id: medical-records-service
+          uri: lb://MEDICAL-RECORDS-SERVICE
+          predicates:
+            - Path=/api/medical-records/**,/api/prescriptions/**,/api/medical-reports/**
+          filters:
+            - AuthenticationFilter
+
+        # Facility Service Routes
+        - id: facility-service
+          uri: lb://FACILITY-SERVICE
+          predicates:
+            - Path=/api/rooms/**
+          filters:
+            - RewritePath=/api/rooms/(?<segment>.*), /${segment}
+            - AuthenticationFilter
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: "*"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowed-headers: "*"
+            allow-credentials: false
+
+# JWT Configuration
+jwt:
+  public-key-url: http://localhost:8081/api/auth/public-key
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+    gateway:
+      enabled: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty: INFO
+    com.hospital.gateway: DEBUG

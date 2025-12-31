@@ -1,0 +1,55 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: medical-records-service
+  config:
+    import: optional:configserver:http://localhost:8888
+  datasource:
+    url: jdbc:postgresql://localhost:5432/hospital_db?currentSchema=medical_records_service
+    username: hospital_user
+    password: hospital_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: medical_records_service
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: redis_password
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: hospital_user
+    password: hospital_password
+  cache:
+    type: redis
+    redis:
+      time-to-live: 1800000
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.uuid}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    com.hospital.medicalrecords: DEBUG
+    org.springframework.amqp: INFO
