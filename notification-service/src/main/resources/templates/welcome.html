@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Our Hospital</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 20px 0;">
+                <table role="presentation" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background-color: #10b981; padding: 30px 40px; text-align: center;">
+                            <!-- Hospital Logo Placeholder -->
+                            <div style="width: 60px; height: 60px; background-color: #ffffff; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                                <span style="font-size: 24px; color: #10b981; font-weight: bold;">H</span>
+                            </div>
+                            <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Welcome!</h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px;">
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                                Dear <span th:text="${patientName}" style="font-weight: 600;">Patient Name</span>,
+                            </p>
+
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
+                                Welcome to our hospital! We are delighted to have you as part of our healthcare family. Your health and well-being are our top priorities.
+                            </p>
+
+                            <!-- Welcome Card -->
+                            <table role="presentation" style="width: 100%; background-color: #ecfdf5; border-radius: 8px; border-left: 4px solid #10b981;">
+                                <tr>
+                                    <td style="padding: 25px;">
+                                        <p style="color: #065f46; font-size: 15px; line-height: 1.6; margin: 0;">
+                                            Your patient registration has been successfully completed. You can now access our full range of healthcare services.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 25px 0 15px;">
+                                As a registered patient, you can:
+                            </p>
+                            <ul style="color: #333333; font-size: 15px; line-height: 1.8; margin: 0 0 25px; padding-left: 20px;">
+                                <li>Book appointments with our specialists</li>
+                                <li>Access your medical records online</li>
+                                <li>Receive prescription reminders</li>
+                                <li>Get health tips and updates</li>
+                                <li>Communicate with your healthcare providers</li>
+                            </ul>
+
+                            <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 25px;">
+                                If you have any questions or need assistance, our patient support team is always here to help.
+                            </p>
+
+                            <!-- CTA Button -->
+                            <table role="presentation" style="width: 100%;">
+                                <tr>
+                                    <td style="text-align: center; padding: 20px 0;">
+                                        <a href="#" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 14px 35px; border-radius: 6px; font-size: 16px; font-weight: 600;">
+                                            Book Your First Appointment
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 0;">
+                                Thank you for choosing us for your healthcare needs. We look forward to serving you.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 30px 40px; border-top: 1px solid #e9ecef;">
+                            <table role="presentation" style="width: 100%;">
+                                <tr>
+                                    <td style="text-align: center;">
+                                        <p style="color: #666666; font-size: 14px; margin: 0 0 10px; font-weight: 600;">
+                                            <!-- Hospital Name Placeholder -->
+                                            Hospital Management System
+                                        </p>
+                                        <p style="color: #999999; font-size: 12px; margin: 0 0 5px;">
+                                            <!-- Hospital Address Placeholder -->
+                                            123 Healthcare Avenue, Medical District
+                                        </p>
+                                        <p style="color: #999999; font-size: 12px; margin: 0 0 5px;">
+                                            <!-- Hospital Contact Placeholder -->
+                                            Phone: (555) 123-4567 | Email: contact@hospital.com
+                                        </p>
+                                        <p style="color: #999999; font-size: 11px; margin: 15px 0 0;">
+                                            This is an automated message. Please do not reply directly to this email.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -20,9 +20,15 @@ public class RabbitMQConfig {
     public static final String HOSPITAL_EVENTS_SAGA_EXCHANGE = "hospital.events.saga";
 
     // Queue names - Notifications
-    public static final String APPOINTMENT_NOTIFICATIONS_QUEUE = "appointment.notifications";
+    public static final String APPOINTMENT_NOTIFICATION_QUEUE = "appointment.notifications";
+    public static final String PATIENT_NOTIFICATION_QUEUE = "patient.notifications";
+    public static final String MEDICAL_NOTIFICATION_QUEUE = "medical.notifications";
+    public static final String FACILITY_NOTIFICATION_QUEUE = "facility.notifications";
+
+    // Legacy queue names (kept for backward compatibility)
+    public static final String APPOINTMENT_NOTIFICATIONS_QUEUE = APPOINTMENT_NOTIFICATION_QUEUE;
     public static final String PRESCRIPTION_NOTIFICATIONS_QUEUE = "prescription.notifications";
-    public static final String FACILITY_NOTIFICATIONS_QUEUE = "facility.notifications";
+    public static final String FACILITY_NOTIFICATIONS_QUEUE = FACILITY_NOTIFICATION_QUEUE;
 
     // Queue names - Snapshots
     public static final String PATIENT_UPDATES_QUEUE = "patient.updates";
@@ -46,6 +52,8 @@ public class RabbitMQConfig {
     public static final String APPOINTMENT_CANCELLED_KEY = "appointment.cancelled";
     public static final String MEDICAL_RECORD_CREATED_KEY = "medical.record.created";
     public static final String PRESCRIPTION_CREATED_KEY = "prescription.created";
+    public static final String PATIENT_ADMITTED_KEY = "patient.admitted";
+    public static final String PATIENT_DISCHARGED_KEY = "patient.discharged";
     public static final String CACHE_INVALIDATE_KEY = "cache.invalidate";
 
     @Bean
@@ -80,18 +88,28 @@ public class RabbitMQConfig {
 
     // Notification Queues
     @Bean
-    public Queue appointmentNotificationsQueue() {
-        return QueueBuilder.durable(APPOINTMENT_NOTIFICATIONS_QUEUE).build();
+    public Queue appointmentNotificationQueue() {
+        return QueueBuilder.durable(APPOINTMENT_NOTIFICATION_QUEUE).build();
+    }
+
+    @Bean
+    public Queue patientNotificationQueue() {
+        return QueueBuilder.durable(PATIENT_NOTIFICATION_QUEUE).build();
+    }
+
+    @Bean
+    public Queue medicalNotificationQueue() {
+        return QueueBuilder.durable(MEDICAL_NOTIFICATION_QUEUE).build();
+    }
+
+    @Bean
+    public Queue facilityNotificationQueue() {
+        return QueueBuilder.durable(FACILITY_NOTIFICATION_QUEUE).build();
     }
 
     @Bean
     public Queue prescriptionNotificationsQueue() {
         return QueueBuilder.durable(PRESCRIPTION_NOTIFICATIONS_QUEUE).build();
-    }
-
-    @Bean
-    public Queue facilityNotificationsQueue() {
-        return QueueBuilder.durable(FACILITY_NOTIFICATIONS_QUEUE).build();
     }
 
     // Snapshot Update Queues
@@ -129,11 +147,51 @@ public class RabbitMQConfig {
 
     // Bindings for Notifications (Topic Exchange)
     @Bean
-    public Binding appointmentNotificationsBinding() {
+    public Binding appointmentNotificationBinding() {
         return BindingBuilder
-                .bind(appointmentNotificationsQueue())
+                .bind(appointmentNotificationQueue())
                 .to(hospitalEventsTopicExchange())
                 .with("appointment.*");
+    }
+
+    @Bean
+    public Binding patientNotificationBinding() {
+        return BindingBuilder
+                .bind(patientNotificationQueue())
+                .to(hospitalEventsTopicExchange())
+                .with("patient.created");
+    }
+
+    @Bean
+    public Binding medicalNotificationMedicalRecordBinding() {
+        return BindingBuilder
+                .bind(medicalNotificationQueue())
+                .to(hospitalEventsTopicExchange())
+                .with("medical-record.*");
+    }
+
+    @Bean
+    public Binding medicalNotificationPrescriptionBinding() {
+        return BindingBuilder
+                .bind(medicalNotificationQueue())
+                .to(hospitalEventsTopicExchange())
+                .with("prescription.*");
+    }
+
+    @Bean
+    public Binding facilityNotificationAdmittedBinding() {
+        return BindingBuilder
+                .bind(facilityNotificationQueue())
+                .to(hospitalEventsTopicExchange())
+                .with("patient.admitted");
+    }
+
+    @Bean
+    public Binding facilityNotificationDischargedBinding() {
+        return BindingBuilder
+                .bind(facilityNotificationQueue())
+                .to(hospitalEventsTopicExchange())
+                .with("patient.discharged");
     }
 
     @Bean
@@ -142,14 +200,6 @@ public class RabbitMQConfig {
                 .bind(prescriptionNotificationsQueue())
                 .to(hospitalEventsTopicExchange())
                 .with("prescription.*");
-    }
-
-    @Bean
-    public Binding facilityNotificationsBinding() {
-        return BindingBuilder
-                .bind(facilityNotificationsQueue())
-                .to(hospitalEventsTopicExchange())
-                .with("facility.*");
     }
 
     // Bindings for Snapshots (Direct Exchange)

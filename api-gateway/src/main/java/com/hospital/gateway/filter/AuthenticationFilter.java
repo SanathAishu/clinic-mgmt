@@ -2,6 +2,7 @@ package com.hospital.gateway.filter;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
@@ -10,31 +11,45 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.security.KeyFactory;
-import java.security.PublicKey;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 /**
  * JWT Authentication Filter for API Gateway
- * Validates JWT tokens using RS256 public key from Auth Service
+ * Validates JWT tokens using HS512 shared secret key
  */
 @Component
 public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
 
-    @Value("${jwt.public-key-url}")
-    private String publicKeyUrl;
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
-    private final WebClient.Builder webClientBuilder;
-    private PublicKey publicKey;
+    private SecretKey secretKey;
 
-    public AuthenticationFilter(WebClient.Builder webClientBuilder) {
+    public AuthenticationFilter() {
         super(Config.class);
-        this.webClientBuilder = webClientBuilder;
+    }
+
+    /**
+     * Get or create the secret key
+     */
+    private SecretKey getSecretKey() {
+        if (secretKey == null) {
+            // Ensure the secret is at least 64 bytes for HS512
+            byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
+            if (keyBytes.length < 64) {
+                // Pad the key to 64 bytes if needed
+                byte[] paddedKey = new byte[64];
+                System.arraycopy(keyBytes, 0, paddedKey, 0, keyBytes.length);
+                secretKey = Keys.hmacShaKeyFor(paddedKey);
+            } else {
+                secretKey = Keys.hmacShaKeyFor(keyBytes);
+            }
+        }
+        return secretKey;
     }
 
     @Override
@@ -54,14 +69,9 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
             String token = authHeader.substring(7);
 
             try {
-                // Load public key if not already loaded
-                if (publicKey == null) {
-                    fetchPublicKey();
-                }
-
-                // Validate token
+                // Validate token using shared secret
                 Claims claims = Jwts.parser()
-                        .verifyWith((java.security.interfaces.RSAPublicKey) publicKey)
+                        .verifyWith(getSecretKey())
                         .build()
                         .parseSignedClaims(token)
                         .getPayload();
@@ -79,31 +89,6 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 return onError(exchange, "Invalid JWT token: " + e.getMessage(), HttpStatus.UNAUTHORIZED);
             }
         };
-    }
-
-    private void fetchPublicKey() {
-        try {
-            String publicKeyPem = webClientBuilder.build()
-                    .get()
-                    .uri(publicKeyUrl)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-
-            if (publicKeyPem != null) {
-                publicKeyPem = publicKeyPem
-                        .replace("-----BEGIN PUBLIC KEY-----", "")
-                        .replace("-----END PUBLIC KEY-----", "")
-                        .replaceAll("\\s", "");
-
-                byte[] keyBytes = Base64.getDecoder().decode(publicKeyPem);
-                X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                publicKey = keyFactory.generatePublic(spec);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to fetch public key from Auth Service", e);
-        }
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String error, HttpStatus httpStatus) {

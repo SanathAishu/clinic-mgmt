@@ -69,14 +69,36 @@ public class RedisConfig {
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
+                // Patient Service caches
                 .withCacheConfiguration("patients",
-                        RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)))
+                        defaultConfig.entryTtl(Duration.ofHours(1)))
+                // Doctor Service caches
                 .withCacheConfiguration("doctors",
-                        RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(1)))
+                        defaultConfig.entryTtl(Duration.ofHours(1)))
+                // Appointment Service caches
                 .withCacheConfiguration("appointments",
-                        RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofMinutes(15)))
+                        defaultConfig.entryTtl(Duration.ofMinutes(15)))
+                .withCacheConfiguration("patient-snapshots",
+                        defaultConfig.entryTtl(Duration.ofHours(2)))
+                .withCacheConfiguration("doctor-snapshots",
+                        defaultConfig.entryTtl(Duration.ofHours(2)))
+                // Medical Records Service caches
                 .withCacheConfiguration("medical-records",
-                        RedisCacheConfiguration.defaultCacheConfig().entryTtl(Duration.ofHours(2)))
+                        defaultConfig.entryTtl(Duration.ofHours(2)))
+                .withCacheConfiguration("prescriptions",
+                        defaultConfig.entryTtl(Duration.ofHours(1)))
+                .withCacheConfiguration("medicalReports",
+                        defaultConfig.entryTtl(Duration.ofHours(2)))
+                // Facility Service caches
+                .withCacheConfiguration("rooms",
+                        defaultConfig.entryTtl(Duration.ofMinutes(30)))
+                .withCacheConfiguration("room-bookings",
+                        defaultConfig.entryTtl(Duration.ofMinutes(15)))
+                // Auth Service caches
+                .withCacheConfiguration("users",
+                        defaultConfig.entryTtl(Duration.ofMinutes(30)))
+                .withCacheConfiguration("public-keys",
+                        defaultConfig.entryTtl(Duration.ofHours(24)))
                 .build();
     }
 }

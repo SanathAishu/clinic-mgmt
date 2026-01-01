@@ -2,6 +2,7 @@ package com.hospital.appointment.consumer;
 
 import com.hospital.appointment.entity.PatientSnapshot;
 import com.hospital.appointment.repository.PatientSnapshotRepository;
+import com.hospital.appointment.service.CacheEvictionService;
 import com.hospital.common.config.RabbitMQConfig;
 import com.hospital.common.events.PatientCreatedEvent;
 import com.hospital.common.events.PatientDeletedEvent;
@@ -12,7 +13,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Consumes patient events to update patient snapshots
+ * Consumes patient events to update patient snapshots and invalidate caches
  */
 @Slf4j
 @Component
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 public class PatientEventConsumer {
 
     private final PatientSnapshotRepository patientSnapshotRepository;
+    private final CacheEvictionService cacheEvictionService;
 
     @RabbitListener(queues = RabbitMQConfig.PATIENT_UPDATES_QUEUE)
     public void handlePatientCreatedEvent(PatientCreatedEvent event) {
@@ -35,6 +37,9 @@ public class PatientEventConsumer {
                 .build();
 
         patientSnapshotRepository.save(snapshot);
+
+        // Evict related caches
+        cacheEvictionService.evictAppointmentsCacheForPatient(event.getPatientId());
 
         log.info("Patient snapshot created for patient ID: {}", event.getPatientId());
     }
@@ -68,6 +73,9 @@ public class PatientEventConsumer {
                             log.warn("Patient snapshot didn't exist, created new snapshot for patient ID: {}", event.getPatientId());
                         }
                 );
+
+        // Evict related caches
+        cacheEvictionService.evictAppointmentsCacheForPatient(event.getPatientId());
     }
 
     @RabbitListener(queues = RabbitMQConfig.PATIENT_UPDATES_QUEUE)
@@ -75,6 +83,9 @@ public class PatientEventConsumer {
         log.info("Received PatientDeletedEvent for patient ID: {}", event.getPatientId());
 
         patientSnapshotRepository.deleteById(event.getPatientId());
+
+        // Evict related caches
+        cacheEvictionService.evictAppointmentsCacheForPatient(event.getPatientId());
 
         log.info("Patient snapshot deleted for patient ID: {}", event.getPatientId());
     }

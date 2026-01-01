@@ -7,8 +7,9 @@
 
     <parent>
         <groupId>com.hospital</groupId>
-        <artifactId>hospital-management-microservices</artifactId>
-        <version>1.0.0</version>
+        <artifactId>hospital-management-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>eureka-server</artifactId>

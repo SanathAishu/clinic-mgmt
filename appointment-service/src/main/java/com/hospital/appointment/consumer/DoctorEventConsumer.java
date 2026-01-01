@@ -2,6 +2,7 @@ package com.hospital.appointment.consumer;
 
 import com.hospital.appointment.entity.DoctorSnapshot;
 import com.hospital.appointment.repository.DoctorSnapshotRepository;
+import com.hospital.appointment.service.CacheEvictionService;
 import com.hospital.common.config.RabbitMQConfig;
 import com.hospital.common.events.DoctorCreatedEvent;
 import com.hospital.common.events.DoctorUpdatedEvent;
@@ -11,7 +12,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Consumes doctor events to update doctor snapshots
+ * Consumes doctor events to update doctor snapshots and invalidate caches
  */
 @Slf4j
 @Component
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 public class DoctorEventConsumer {
 
     private final DoctorSnapshotRepository doctorSnapshotRepository;
+    private final CacheEvictionService cacheEvictionService;
 
     @RabbitListener(queues = RabbitMQConfig.DOCTOR_UPDATES_QUEUE)
     public void handleDoctorCreatedEvent(DoctorCreatedEvent event) {
@@ -34,6 +36,9 @@ public class DoctorEventConsumer {
                 .build();
 
         doctorSnapshotRepository.save(snapshot);
+
+        // Evict related caches
+        cacheEvictionService.evictAppointmentsCacheForDoctor(event.getDoctorId());
 
         log.info("Doctor snapshot created for doctor ID: {}", event.getDoctorId());
     }
@@ -67,5 +72,8 @@ public class DoctorEventConsumer {
                             log.warn("Doctor snapshot didn't exist, created new snapshot for doctor ID: {}", event.getDoctorId());
                         }
                 );
+
+        // Evict related caches
+        cacheEvictionService.evictAppointmentsCacheForDoctor(event.getDoctorId());
     }
 }

@@ -64,9 +64,24 @@ spring:
         - id: facility-service
           uri: lb://FACILITY-SERVICE
           predicates:
-            - Path=/api/rooms/**
+            - Path=/api/rooms/**,/api/room-bookings/**
           filters:
-            - RewritePath=/api/rooms/(?<segment>.*), /${segment}
+            - AuthenticationFilter
+
+        # Notification Service Routes
+        - id: notification-service
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - AuthenticationFilter
+
+        # Audit Service Routes
+        - id: audit-service
+          uri: lb://AUDIT-SERVICE
+          predicates:
+            - Path=/api/audit/**
+          filters:
             - AuthenticationFilter
 
       default-filters:
@@ -84,9 +99,9 @@ spring:
             allowed-headers: "*"
             allow-credentials: false
 
-# JWT Configuration
+# JWT Configuration - Shared secret key (same as auth-service)
 jwt:
-  public-key-url: http://localhost:8081/api/auth/public-key
+  secret: ${JWT_SECRET:HospitalManagementSystemSecretKeyForHS512Algorithm2024SecureTokenGeneration}
 
 eureka:
   client:

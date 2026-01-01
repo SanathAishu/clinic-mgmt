@@ -53,11 +53,9 @@
         <module>doctor-service</module>
         <module>appointment-service</module>
         <module>medical-records-service</module>
-        <!--
         <module>facility-service</module>
         <module>notification-service</module>
         <module>audit-service</module>
-        -->
     </modules>
 
     <dependencyManagement>

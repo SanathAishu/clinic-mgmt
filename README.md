@@ -1,286 +1,282 @@
 # Hospital Management System - Microservices Architecture
 
-A comprehensive hospital management system built with Spring Boot microservices architecture, featuring **PostgreSQL with UUID primary keys**, **Redis caching**, **RabbitMQ event-driven messaging**, and **Spring Cloud** infrastructure.
+A comprehensive hospital management system built with Spring Boot microservices architecture, featuring **PostgreSQL**, **Redis caching**, **RabbitMQ event-driven messaging**, and **Spring Cloud** infrastructure.
 
 ## Architecture Overview
 
+```
+                                    ┌─────────────────┐
+                                    │   API Gateway   │
+                                    │     :8080       │
+                                    └────────┬────────┘
+                                             │
+              ┌──────────────────────────────┼──────────────────────────────┐
+              │                              │                              │
+    ┌─────────▼─────────┐         ┌─────────▼─────────┐         ┌─────────▼─────────┐
+    │   Auth Service    │         │  Patient Service  │         │  Doctor Service   │
+    │      :8081        │         │      :8082        │         │      :8083        │
+    └───────────────────┘         └───────────────────┘         └───────────────────┘
+              │                              │                              │
+    ┌─────────▼─────────┐         ┌─────────▼─────────┐         ┌─────────▼─────────┐
+    │Appointment Service│         │Medical Records Svc│         │ Facility Service  │
+    │      :8084        │         │      :8085        │         │      :8086        │
+    └───────────────────┘         └───────────────────┘         └───────────────────┘
+              │                              │                              │
+    ┌─────────▼─────────┐         ┌─────────▼─────────┐                     │
+    │Notification Service│        │   Audit Service   │◄────────────────────┘
+    │      :8087        │         │      :8088        │
+    └───────────────────┘         └───────────────────┘
+              │                              │
+              └──────────────┬───────────────┘
+                             │
+    ┌────────────────────────┼────────────────────────┐
+    │                        │                        │
+    ▼                        ▼                        ▼
+┌────────┐            ┌────────────┐           ┌──────────┐
+│PostgreSQL│          │  RabbitMQ  │           │  Redis   │
+│  :5432  │           │:5672/:15672│           │  :6379   │
+└─────────┘           └────────────┘           └──────────┘
+```
+
 ### Microservices (8 Services)
-1. **Auth Service** (8081) - RS256 JWT authentication, user management
-2. **Patient Service** (8082) - Patient demographics and health records
-3. **Doctor Service** (8083) - Doctor profiles and specialties
-4. **Appointment Service** (8084) - Appointment scheduling with validation
-5. **Medical Records Service** (8085) - Medical records, prescriptions, reports
-6. **Facility Service** (8086) - Room management and admissions (Saga pattern)
-7. **Notification Service** (8087) - Event-driven email notifications
-8. **Audit Service** (8088) - HIPAA-compliant audit logging with JSONB
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Auth Service | 8081 | HS512 JWT authentication, user management |
+| Patient Service | 8082 | Patient demographics and health records |
+| Doctor Service | 8083 | Doctor profiles and specialties |
+| Appointment Service | 8084 | Scheduling with disease-specialty matching |
+| Medical Records Service | 8085 | Records, prescriptions, medical reports |
+| Facility Service | 8086 | Room management and admissions (Saga pattern) |
+| Notification Service | 8087 | Event-driven email notifications |
+| Audit Service | 8088 | HIPAA-compliant audit logging |
 
 ### Infrastructure Components
-- **Config Server** (8888) - Centralized configuration management
-- **Eureka Server** (8761) - Service discovery and registration
-- **API Gateway** (8080) - Single entry point, JWT validation, routing
-- **PostgreSQL** (5432) - Database with 8 schemas, UUID support
-- **Redis** (6379) - Distributed caching
-- **RabbitMQ** (5672, 15672) - Event-driven messaging
+
+| Component | Port | Description |
+|-----------|------|-------------|
+| API Gateway | 8080 | Single entry point, JWT validation, routing |
+| Config Server | 8888 | Centralized configuration management |
+| Eureka Server | 8761 | Service discovery and registration |
+| PostgreSQL | 5432 | Database (separate DB per service) |
+| Redis | 6379 | Distributed caching |
+| RabbitMQ | 5672/15672 | Event-driven messaging |
 
 ## Technology Stack
 
-- **Java 21** with preview features
+- **Java 21** with modern features
 - **Spring Boot 3.5.0**
-- **Spring Cloud 2024.0.0**
-- **PostgreSQL 16 Alpine** with UUID extensions
-- **Redis 7 Alpine**
-- **RabbitMQ 3.13 Management Alpine**
+- **Spring Cloud 2024.0.0** (Gateway, Eureka, Config, OpenFeign)
+- **PostgreSQL 16** with UUID primary keys
+- **Redis 7** for distributed caching
+- **RabbitMQ 3.13** for event messaging
 - **Docker Compose** for local development
 - **Maven** multi-module project
 
 ## Key Features
 
-### UUID Primary Keys
-- All entities use UUID as primary keys (`gen_random_uuid()`)
-- Better for distributed systems and security
-- No sequential ID exposure
-
-### PostgreSQL JSONB
-- Flexible metadata storage
-- Full-text search with GIN indexes
-- Audit logs with JSONB columns
+### Security
+- **HS512 JWT** with shared secret key across services
+- API Gateway validates tokens before routing
+- Role-based access control (ADMIN, DOCTOR, PATIENT, NURSE, STAFF)
 
 ### Event-Driven Architecture
-- RabbitMQ for asynchronous communication
-- Domain events for data synchronization
+- RabbitMQ topic/direct exchanges for async communication
+- Domain events for cross-service data sync
 - Cache invalidation events
-- Saga pattern for distributed transactions
+- Saga pattern for distributed transactions (facility admissions)
 
-### Security
-- RS256 JWT (asymmetric encryption)
-- Auth Service holds private key
-- Other services validate with public key
-- Role-based access control (RBAC)
+### Disease-Specialty Matching
+- Intelligent doctor recommendation based on patient's disease
+- 95 diseases mapped to 25 medical specialties
+- Automatic specialty filtering for appointments
 
 ### Distributed Caching
-- Redis for shared caching across services
-- Different TTLs for different entities
-- Cache-aside pattern
-- Event-driven cache invalidation
+- Redis with per-entity TTL configurations
+- Cache-aside pattern implementation
+- Cross-service cache invalidation via events
 
 ### HIPAA Compliance
-- Comprehensive audit logging
-- 7-year retention policy
-- Table partitioning for performance
-- JSONB for flexible audit data
+- Comprehensive audit logging in Audit Service
+- All create/update/delete operations tracked
+- Configurable retention policies
 
-## Project Structure
-
-```
-.
-├── pom.xml                          # Parent POM
-├── hospital-common/                 # Shared library
-│   ├── dto/                         # Common DTOs
-│   ├── enums/                       # Enums (Disease, Specialty, etc.)
-│   ├── events/                      # Domain events
-│   ├── exception/                   # Base exceptions
-│   ├── config/                      # RabbitMQ, Redis, Feign config
-│   └── util/                        # Utilities (DiseaseSpecialtyMapper)
-├── config-server/                   # Centralized configuration
-├── eureka-server/                   # Service discovery
-├── api-gateway/                     # API Gateway with JWT validation
-├── config-repo/                     # Configuration files for all services
-├── docker-compose.yml               # Infrastructure services
-└── infrastructure/
-    ├── postgresql/init-schemas.sql  # Database initialization
-    └── rabbitmq/rabbitmq.conf       # RabbitMQ configuration
-```
-
-## Getting Started
+## Quick Start
 
 ### Prerequisites
 - Java 21
 - Maven 3.9+
 - Docker & Docker Compose
 
-### 1. Start Infrastructure Services
+### 1. Start Infrastructure Only
 
 ```bash
 # Start PostgreSQL, Redis, RabbitMQ
-docker-compose up -d
+docker-compose -f docker-compose-infra.yml up -d
 
-# Verify all services are running
-docker-compose ps
-
-# Check PostgreSQL schemas
-docker exec hospital-postgres psql -U hospital_user -d hospital_db -c "\dn"
+# Verify services
+docker-compose -f docker-compose-infra.yml ps
 ```
 
-### 2. Build All Modules
+### 2. Build All Services
 
 ```bash
-# Build parent and all modules
-./mvnw clean install
-
-# Or build specific module
-./mvnw clean install -pl hospital-common
+./mvnw clean package -DskipTests
 ```
 
-### 3. Start Infrastructure Modules (in order)
+### 3. Run Services Locally
 
 ```bash
-# 1. Config Server (must start first)
-cd config-server
-../mvnw spring-boot:run
+# Start in order:
+# 1. Config Server
+cd config-server && ../mvnw spring-boot:run &
 
-# 2. Eureka Server
-cd ../eureka-server
-../mvnw spring-boot:run
+# 2. Eureka Server (wait for config server)
+cd eureka-server && ../mvnw spring-boot:run &
 
 # 3. API Gateway
-cd ../api-gateway
-../mvnw spring-boot:run
+cd api-gateway && ../mvnw spring-boot:run &
+
+# 4. Business services (can start in parallel)
+cd auth-service && ../mvnw spring-boot:run &
+cd patient-service && ../mvnw spring-boot:run &
+cd doctor-service && ../mvnw spring-boot:run &
+# ... etc
 ```
 
-### 4. Access Infrastructure
-
-- **Eureka Dashboard**: http://localhost:8761
-- **API Gateway**: http://localhost:8080
-- **Config Server**: http://localhost:8888
-- **RabbitMQ Management**: http://localhost:15672 (user: hospital_user, pass: rabbitmq_password_2025)
-
-## Environment Variables
-
-Copy `.env.example` to `.env` and configure:
+### 4. Or Run Everything with Docker
 
 ```bash
-# Database
-POSTGRES_DB=hospital_db
-POSTGRES_USER=hospital_user
-POSTGRES_PASSWORD=hospital_password_2025
+# Build and start all services
+docker-compose up -d --build
 
-# Redis
-REDIS_PASSWORD=redis_password_2025
+# View logs
+docker-compose logs -f
 
-# RabbitMQ
-RABBITMQ_USER=hospital_user
-RABBITMQ_PASSWORD=rabbitmq_password_2025
-
-# JWT (will be generated by Auth Service)
-JWT_PRIVATE_KEY_PATH=/path/to/private_key.pem
-JWT_PUBLIC_KEY_PATH=/path/to/public_key.pem
-
-# Email (for Notification Service)
-MAIL_USERNAME=your-email@gmail.com
-MAIL_PASSWORD=your-app-password
+# Stop all
+docker-compose down
 ```
 
-## Database Schemas
+### 5. Access Services
 
-PostgreSQL has 8 separate schemas (not databases):
+| Service | URL |
+|---------|-----|
+| API Gateway | http://localhost:8080 |
+| Eureka Dashboard | http://localhost:8761 |
+| RabbitMQ Management | http://localhost:15672 (guest/guest) |
 
-1. **auth_service** - Users, roles, authentication
-2. **patient_service** - Patient demographics
-3. **doctor_service** - Doctor profiles
-4. **appointment_service** - Appointments + patient/doctor snapshots
-5. **medical_records_service** - Records, prescriptions, reports
-6. **facility_service** - Rooms, admissions, bookings
-7. **notification_service** - Email logs, templates
-8. **audit_service** - Audit logs with JSONB
-
-All schemas have UUID extensions enabled:
-```sql
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-```
-
-## RabbitMQ Configuration
-
-### Exchanges
-- `hospital.events.topic` - Topic exchange for notifications
-- `hospital.events.direct` - Direct exchange for snapshots
-- `hospital.events.saga` - Direct exchange for sagas
-
-### Queues
-- `appointment.notifications`
-- `prescription.notifications`
-- `patient.updates` (for snapshots)
-- `doctor.updates` (for snapshots)
-- `patient.admission.request` (for saga)
-- `cache.invalidation`
-
-## API Routes (via Gateway)
+## API Endpoints
 
 All requests go through API Gateway at `http://localhost:8080`
 
 ### Public Routes (No Authentication)
-- `POST /api/auth/register/patient` - Patient registration
-- `POST /api/auth/register/doctor` - Doctor registration
-- `POST /api/auth/login` - Login
-- `GET /api/auth/public-key` - Get JWT public key
+```
+POST /api/auth/register    - Register new user
+POST /api/auth/login       - Login and get JWT
+GET  /api/auth/health      - Health check
+```
 
-### Protected Routes (Requires JWT)
-- `GET/POST/PUT/DELETE /api/patients/**`
-- `GET/POST/PUT/DELETE /api/doctors/**`
-- `GET/POST/PUT/DELETE /api/appointments/**`
-- `GET/POST/PUT/DELETE /api/medical-records/**`
-- `GET/POST/PUT/DELETE /api/rooms/**`
+### Protected Routes (Requires JWT in Authorization header)
+```
+# Patients
+GET    /api/patients           - List all patients
+GET    /api/patients/{id}      - Get patient by ID
+POST   /api/patients           - Create patient
+PUT    /api/patients/{id}      - Update patient
+DELETE /api/patients/{id}      - Delete patient
 
-## Development Roadmap
+# Doctors
+GET    /api/doctors            - List all doctors
+GET    /api/doctors/{id}       - Get doctor by ID
+GET    /api/doctors/specialty/{specialty} - Get by specialty
 
-### Phase 1: Infrastructure Setup ✅
-- [x] Docker Compose (PostgreSQL, Redis, RabbitMQ)
-- [x] Parent POM and hospital-common module
-- [x] Config Server
-- [x] Eureka Server
-- [x] API Gateway
+# Appointments
+POST   /api/appointments       - Book appointment
+GET    /api/appointments/{id}  - Get appointment
+PUT    /api/appointments/{id}/cancel - Cancel appointment
 
-### Phase 2: Auth Service (In Progress)
-- [ ] User entity with UUID
-- [ ] RS256 JWT generation
-- [ ] Public key endpoint
-- [ ] Registration and login endpoints
+# Medical Records
+GET    /api/medical-records/patient/{id}  - Get patient records
+POST   /api/prescriptions      - Create prescription
+POST   /api/medical-reports    - Create report
 
-### Phase 3: Patient & Doctor Services
-- [ ] Patient CRUD with UUID
-- [ ] Doctor CRUD with UUID
-- [ ] Event publishing (created, updated, deleted)
-- [ ] Redis caching
+# Facility
+GET    /api/rooms              - List available rooms
+POST   /api/room-bookings      - Book a room
 
-### Phase 4: Appointment Service
-- [ ] Appointment CRUD with UUID foreign keys
-- [ ] Patient/Doctor snapshot tables
-- [ ] Feign clients for validation
-- [ ] Event consumers for snapshot updates
+# Audit (Admin only)
+GET    /api/audit/logs         - Get audit logs
+```
 
-### Phase 5: Medical Records Service
-- [ ] Medical records with UUID
-- [ ] Prescriptions and reports
-- [ ] JSONB metadata columns
+## Environment Variables
 
-### Phase 6: Facility Service
-- [ ] Room management
-- [ ] Saga pattern for admissions
-- [ ] Compensation logic
+Copy `.env.example` to `.env`:
 
-### Phase 7: Notification Service
-- [ ] RabbitMQ consumers
-- [ ] Email templates
-- [ ] SMTP integration
+```bash
+# JWT (min 64 chars for HS512)
+JWT_SECRET=HospitalManagementSystemSecretKeyForHS512Algorithm2024SecureTokenGeneration
 
-### Phase 8: Audit Service
-- [ ] Audit logging with JSONB
-- [ ] Table partitioning
-- [ ] 7-year retention
+# PostgreSQL
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
 
-### Phase 9: Testing
-- [ ] Unit tests
-- [ ] Integration tests with TestContainers
-- [ ] E2E tests
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
 
-### Phase 10: Production Deployment
-- [ ] Kubernetes manifests
-- [ ] CI/CD pipelines
-- [ ] Monitoring (Prometheus, Grafana)
+# RabbitMQ
+RABBITMQ_HOST=localhost
 
-## Contributing
+# Email (optional, for notifications)
+MAIL_HOST=smtp.gmail.com
+MAIL_USERNAME=
+MAIL_PASSWORD=
+```
 
-This is a migration project from a monolithic architecture. See `microservices-migration.md` for the complete migration plan.
+## Project Structure
+
+```
+.
+├── pom.xml                      # Parent POM
+├── docker-compose.yml           # Full stack
+├── docker-compose-infra.yml     # Infrastructure only
+├── .env.example                 # Environment template
+│
+├── hospital-common/             # Shared library
+│   ├── dto/                     # Common DTOs, ApiResponse
+│   ├── enums/                   # Disease, Specialty, Role
+│   ├── events/                  # Domain events
+│   ├── config/                  # RabbitMQ, Redis, Feign
+│   └── security/                # Shared JwtUtils
+│
+├── config-server/               # Spring Cloud Config
+├── eureka-server/               # Service Discovery
+├── api-gateway/                 # API Gateway + JWT Filter
+│
+├── auth-service/                # Authentication
+├── patient-service/             # Patient Management
+├── doctor-service/              # Doctor Management
+├── appointment-service/         # Appointments + Snapshots
+├── medical-records-service/     # Medical Records
+├── facility-service/            # Rooms + Saga
+├── notification-service/        # Email Notifications
+└── audit-service/               # Audit Logging
+```
+
+## Development Status
+
+| Phase | Status |
+|-------|--------|
+| Phase 1: Infrastructure Setup | ✅ Complete |
+| Phase 2: Auth Service | ✅ Complete |
+| Phase 3: Patient & Doctor Services | ✅ Complete |
+| Phase 4: Appointment Service | ✅ Complete |
+| Phase 5: Medical Records Service | ✅ Complete |
+| Phase 6: Facility Service (Saga) | ✅ Complete |
+| Phase 7: Notification Service | ✅ Complete |
+| Phase 8: Audit Service | ✅ Complete |
+| Phase 9: Testing | ⏳ Pending |
+| Phase 10: Deployment | ⏳ Pending |
 
 ## License
 

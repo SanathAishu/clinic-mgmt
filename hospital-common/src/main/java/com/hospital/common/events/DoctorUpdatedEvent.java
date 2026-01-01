@@ -15,7 +15,7 @@ import java.util.UUID;
  */
 @Data
 @SuperBuilder
-<parameter name="NoArgsConstructor
+@NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class DoctorUpdatedEvent extends BaseEvent {

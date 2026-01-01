@@ -55,15 +55,16 @@ public class AuthController {
     }
 
     /**
-     * Get public key for JWT validation (used by API Gateway)
+     * Validate token endpoint (for internal service calls)
      */
-    @GetMapping("/public-key")
-    public ResponseEntity<String> getPublicKey() {
-        log.info("Public key requested");
-
-        String publicKeyPem = jwtUtils.getPublicKeyPem();
-
-        return ResponseEntity.ok(publicKeyPem);
+    @GetMapping("/validate")
+    public ResponseEntity<ApiResponse<Boolean>> validateToken(@RequestHeader("Authorization") String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.ok(ApiResponse.success(false));
+        }
+        String token = authHeader.substring(7);
+        boolean isValid = jwtUtils.validateToken(token);
+        return ResponseEntity.ok(ApiResponse.success(isValid));
     }
 
     /**
