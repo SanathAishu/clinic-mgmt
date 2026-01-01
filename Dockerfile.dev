@@ -1,0 +1,34 @@
+FROM eclipse-temurin:21-jdk-alpine
+
+LABEL maintainer="Hospital Management System"
+LABEL description="All-in-one development container"
+
+WORKDIR /app
+
+# Install required tools
+RUN apk add --no-cache bash wget curl
+
+# Copy all built jars
+COPY config-server/target/*.jar /app/config-server.jar
+COPY eureka-server/target/*.jar /app/eureka-server.jar
+COPY api-gateway/target/*.jar /app/api-gateway.jar
+COPY auth-service/target/*.jar /app/auth-service.jar
+COPY patient-service/target/*.jar /app/patient-service.jar
+COPY doctor-service/target/*.jar /app/doctor-service.jar
+COPY appointment-service/target/*.jar /app/appointment-service.jar
+COPY medical-records-service/target/*.jar /app/medical-records-service.jar
+COPY facility-service/target/*.jar /app/facility-service.jar
+COPY notification-service/target/*.jar /app/notification-service.jar
+COPY audit-service/target/*.jar /app/audit-service.jar
+
+# Copy startup script
+COPY docker/start-all.sh /app/start-all.sh
+RUN chmod +x /app/start-all.sh
+
+# Expose all ports
+EXPOSE 8888 8761 8080 8081 8082 8083 8084 8085 8086 8087 8088
+
+# JVM options for low memory
+ENV JAVA_OPTS="-Xms64m -Xmx128m -XX:+UseG1GC -XX:+UseContainerSupport -XX:MaxGCPauseMillis=100"
+
+ENTRYPOINT ["/app/start-all.sh"]

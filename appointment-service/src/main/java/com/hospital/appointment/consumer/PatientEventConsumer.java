@@ -9,21 +9,24 @@ import com.hospital.common.events.PatientDeletedEvent;
 import com.hospital.common.events.PatientUpdatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Consumes patient events to update patient snapshots and invalidate caches
+ * Consumes patient events to update patient snapshots and invalidate caches.
+ * Uses class-level @RabbitListener with @RabbitHandler for type-based message routing.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@RabbitListener(queues = RabbitMQConfig.PATIENT_UPDATES_QUEUE)
 public class PatientEventConsumer {
 
     private final PatientSnapshotRepository patientSnapshotRepository;
     private final CacheEvictionService cacheEvictionService;
 
-    @RabbitListener(queues = RabbitMQConfig.PATIENT_UPDATES_QUEUE)
+    @RabbitHandler
     public void handlePatientCreatedEvent(PatientCreatedEvent event) {
         log.info("Received PatientCreatedEvent for patient ID: {}", event.getPatientId());
 
@@ -44,7 +47,7 @@ public class PatientEventConsumer {
         log.info("Patient snapshot created for patient ID: {}", event.getPatientId());
     }
 
-    @RabbitListener(queues = RabbitMQConfig.PATIENT_UPDATES_QUEUE)
+    @RabbitHandler
     public void handlePatientUpdatedEvent(PatientUpdatedEvent event) {
         log.info("Received PatientUpdatedEvent for patient ID: {}", event.getPatientId());
 
@@ -78,7 +81,7 @@ public class PatientEventConsumer {
         cacheEvictionService.evictAppointmentsCacheForPatient(event.getPatientId());
     }
 
-    @RabbitListener(queues = RabbitMQConfig.PATIENT_UPDATES_QUEUE)
+    @RabbitHandler
     public void handlePatientDeletedEvent(PatientDeletedEvent event) {
         log.info("Received PatientDeletedEvent for patient ID: {}", event.getPatientId());
 
@@ -88,5 +91,10 @@ public class PatientEventConsumer {
         cacheEvictionService.evictAppointmentsCacheForPatient(event.getPatientId());
 
         log.info("Patient snapshot deleted for patient ID: {}", event.getPatientId());
+    }
+
+    @RabbitHandler(isDefault = true)
+    public void handleUnknownEvent(Object event) {
+        log.warn("Received unknown event type on patient.updates queue: {}", event.getClass().getName());
     }
 }

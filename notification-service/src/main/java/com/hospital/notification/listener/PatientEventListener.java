@@ -25,7 +25,7 @@ public class PatientEventListener {
      *
      * @param event the patient created event
      */
-    @RabbitListener(queues = RabbitMQConfig.PATIENT_UPDATES_QUEUE)
+    @RabbitListener(queues = RabbitMQConfig.PATIENT_NOTIFICATION_QUEUE)
     public void handlePatientCreated(PatientCreatedEvent event) {
         log.info("Received PatientCreatedEvent: patientId={}, name={}, email={}",
                 event.getPatientId(),

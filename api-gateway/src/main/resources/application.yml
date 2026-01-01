@@ -17,13 +17,11 @@ spring:
           enabled: true
           lower-case-service-id: true
       routes:
-        # Auth Service Routes
+        # Auth Service Routes (no authentication required, no rewrite needed)
         - id: auth-service
           uri: lb://AUTH-SERVICE
           predicates:
             - Path=/api/auth/**
-          filters:
-            - RewritePath=/api/auth/(?<segment>.*), /${segment}
 
         # Patient Service Routes
         - id: patient-service
@@ -31,7 +29,6 @@ spring:
           predicates:
             - Path=/api/patients/**
           filters:
-            - RewritePath=/api/patients/(?<segment>.*), /${segment}
             - AuthenticationFilter
 
         # Doctor Service Routes
@@ -40,7 +37,6 @@ spring:
           predicates:
             - Path=/api/doctors/**
           filters:
-            - RewritePath=/api/doctors/(?<segment>.*), /${segment}
             - AuthenticationFilter
 
         # Appointment Service Routes
@@ -49,7 +45,6 @@ spring:
           predicates:
             - Path=/api/appointments/**
           filters:
-            - RewritePath=/api/appointments/(?<segment>.*), /${segment}
             - AuthenticationFilter
 
         # Medical Records Service Routes

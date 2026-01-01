@@ -2,8 +2,9 @@ package com.hospital.facility.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,7 +13,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "rooms", schema = "facility_service")
+@Table(name = "rooms")
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -56,11 +58,11 @@ public class Room {
     @Builder.Default
     private List<RoomBooking> bookings = new ArrayList<>();
 
-    @CreationTimestamp
+    @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    @UpdateTimestamp
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     public boolean hasAvailableBeds() {

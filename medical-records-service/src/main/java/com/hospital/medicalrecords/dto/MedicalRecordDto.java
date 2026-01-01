@@ -2,6 +2,7 @@ package com.hospital.medicalrecords.dto;
 
 import lombok.*;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -11,7 +12,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MedicalRecordDto {
+public class MedicalRecordDto implements Serializable {
+    private static final long serialVersionUID = 1L;
     private UUID id;
     private UUID patientId;
     private UUID doctorId;

@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -18,7 +19,8 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AppointmentDto {
+public class AppointmentDto implements Serializable {
+    private static final long serialVersionUID = 1L;
     private UUID id;
     private UUID patientId;
     private String patientName;

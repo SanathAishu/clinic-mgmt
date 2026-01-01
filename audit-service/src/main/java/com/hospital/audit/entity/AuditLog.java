@@ -2,7 +2,8 @@ package com.hospital.audit.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import java.util.UUID;
     @Index(name = "idx_audit_timestamp", columnList = "timestamp"),
     @Index(name = "idx_audit_service", columnList = "service_name")
 })
+@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -83,7 +85,7 @@ public class AuditLog {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
-    @CreationTimestamp
+    @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp;
 }

@@ -155,11 +155,19 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding patientNotificationBinding() {
+    public Binding patientNotificationTopicBinding() {
         return BindingBuilder
                 .bind(patientNotificationQueue())
                 .to(hospitalEventsTopicExchange())
                 .with("patient.created");
+    }
+
+    @Bean
+    public Binding patientNotificationDirectBinding() {
+        return BindingBuilder
+                .bind(patientNotificationQueue())
+                .to(hospitalEventsDirectExchange())
+                .with(PATIENT_CREATED_KEY);
     }
 
     @Bean
@@ -202,9 +210,17 @@ public class RabbitMQConfig {
                 .with("prescription.*");
     }
 
-    // Bindings for Snapshots (Direct Exchange)
+    // Bindings for Snapshots (Direct Exchange - to receive created, updated, deleted events)
     @Bean
-    public Binding patientUpdatesBinding() {
+    public Binding patientUpdatesCreatedBinding() {
+        return BindingBuilder
+                .bind(patientUpdatesQueue())
+                .to(hospitalEventsDirectExchange())
+                .with(PATIENT_CREATED_KEY);
+    }
+
+    @Bean
+    public Binding patientUpdatesUpdatedBinding() {
         return BindingBuilder
                 .bind(patientUpdatesQueue())
                 .to(hospitalEventsDirectExchange())
@@ -212,7 +228,23 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public Binding doctorUpdatesBinding() {
+    public Binding patientUpdatesDeletedBinding() {
+        return BindingBuilder
+                .bind(patientUpdatesQueue())
+                .to(hospitalEventsDirectExchange())
+                .with(PATIENT_DELETED_KEY);
+    }
+
+    @Bean
+    public Binding doctorUpdatesCreatedBinding() {
+        return BindingBuilder
+                .bind(doctorUpdatesQueue())
+                .to(hospitalEventsDirectExchange())
+                .with(DOCTOR_CREATED_KEY);
+    }
+
+    @Bean
+    public Binding doctorUpdatesUpdatedBinding() {
         return BindingBuilder
                 .bind(doctorUpdatesQueue())
                 .to(hospitalEventsDirectExchange())

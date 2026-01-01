@@ -7,7 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -17,7 +18,8 @@ import java.util.UUID;
  * Updated via events from Doctor Service
  */
 @Entity
-@Table(name = "doctor_snapshots", schema = "appointment_service")
+@Table(name = "doctor_snapshots")
+@EntityListeners(AuditingEntityListener.class)
 @Data
 @Builder
 @NoArgsConstructor
@@ -44,6 +46,6 @@ public class DoctorSnapshot {
     @Column(nullable = false, length = 50)
     private Specialty specialty;
 
-    @UpdateTimestamp
+    @LastModifiedDate
     private LocalDateTime lastUpdated;
 }

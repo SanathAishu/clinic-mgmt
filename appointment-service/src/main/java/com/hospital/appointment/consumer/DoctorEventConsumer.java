@@ -8,21 +8,24 @@ import com.hospital.common.events.DoctorCreatedEvent;
 import com.hospital.common.events.DoctorUpdatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 /**
- * Consumes doctor events to update doctor snapshots and invalidate caches
+ * Consumes doctor events to update doctor snapshots and invalidate caches.
+ * Uses class-level @RabbitListener with @RabbitHandler for type-based message routing.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@RabbitListener(queues = RabbitMQConfig.DOCTOR_UPDATES_QUEUE)
 public class DoctorEventConsumer {
 
     private final DoctorSnapshotRepository doctorSnapshotRepository;
     private final CacheEvictionService cacheEvictionService;
 
-    @RabbitListener(queues = RabbitMQConfig.DOCTOR_UPDATES_QUEUE)
+    @RabbitHandler
     public void handleDoctorCreatedEvent(DoctorCreatedEvent event) {
         log.info("Received DoctorCreatedEvent for doctor ID: {}", event.getDoctorId());
 
@@ -43,7 +46,7 @@ public class DoctorEventConsumer {
         log.info("Doctor snapshot created for doctor ID: {}", event.getDoctorId());
     }
 
-    @RabbitListener(queues = RabbitMQConfig.DOCTOR_UPDATES_QUEUE)
+    @RabbitHandler
     public void handleDoctorUpdatedEvent(DoctorUpdatedEvent event) {
         log.info("Received DoctorUpdatedEvent for doctor ID: {}", event.getDoctorId());
 
@@ -75,5 +78,10 @@ public class DoctorEventConsumer {
 
         // Evict related caches
         cacheEvictionService.evictAppointmentsCacheForDoctor(event.getDoctorId());
+    }
+
+    @RabbitHandler(isDefault = true)
+    public void handleUnknownEvent(Object event) {
+        log.warn("Received unknown event type on doctor.updates queue: {}", event.getClass().getName());
     }
 }
