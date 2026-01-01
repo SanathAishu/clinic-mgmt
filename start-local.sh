@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Local development script
-# Runs infrastructure in Docker, services natively (most RAM efficient)
+# Runs infrastructure in Docker, services natively
 
 set -e
 
@@ -25,7 +25,7 @@ check_infra() {
 
 # Build if needed
 build_if_needed() {
-    if [ ! -f "config-server/target/config-server-1.0.0-SNAPSHOT.jar" ]; then
+    if [ ! -f "eureka-server/target/eureka-server-1.0.0-SNAPSHOT.jar" ]; then
         echo "Building all services..."
         ./mvnw clean package -DskipTests -q
     fi
@@ -61,8 +61,6 @@ start_service() {
     echo "Starting $name on port $port..."
     java $JAVA_OPTS -Dspring.amqp.deserialization.trust.all=true -jar $jar \
         --server.port=$port \
-        --spring.config.import=optional:configserver:http://localhost:8888 \
-        --spring.cloud.config.enabled=false \
         --spring.datasource.url=jdbc:postgresql://localhost:5432/$db_name \
         --spring.datasource.username=postgres \
         --spring.datasource.password=postgres \
@@ -89,20 +87,10 @@ echo ""
 echo "Starting services (logs in ./logs/)..."
 echo ""
 
-# Start Config Server
-echo "Starting config-server on port 8888..."
-java $JAVA_OPTS -jar config-server/target/config-server-1.0.0-SNAPSHOT.jar \
-    --server.port=8888 \
-    > logs/config-server.log 2>&1 &
-echo $! > logs/config-server.pid
-sleep 10
-
 # Start Eureka Server
 echo "Starting eureka-server on port 8761..."
 java $JAVA_OPTS -jar eureka-server/target/eureka-server-1.0.0-SNAPSHOT.jar \
     --server.port=8761 \
-    --spring.config.import=optional:configserver:http://localhost:8888 \
-    --spring.cloud.config.enabled=false \
     > logs/eureka-server.log 2>&1 &
 echo $! > logs/eureka-server.pid
 wait_for_service "http://localhost:8761/actuator/health" "Eureka"
@@ -111,8 +99,6 @@ wait_for_service "http://localhost:8761/actuator/health" "Eureka"
 echo "Starting api-gateway on port 8080..."
 java $JAVA_OPTS -jar api-gateway/target/api-gateway-1.0.0-SNAPSHOT.jar \
     --server.port=8080 \
-    --spring.config.import=optional:configserver:http://localhost:8888 \
-    --spring.cloud.config.enabled=false \
     --eureka.client.service-url.defaultZone=http://localhost:8761/eureka/ \
     --jwt.secret=HospitalManagementSystemSecretKeyForHS512Algorithm2024SecureTokenGeneration \
     > logs/api-gateway.log 2>&1 &

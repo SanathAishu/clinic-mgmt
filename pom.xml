@@ -43,7 +43,6 @@
         <module>hospital-common</module>
 
         <!-- Infrastructure services -->
-        <module>config-server</module>
         <module>eureka-server</module>
         <module>api-gateway</module>
 
