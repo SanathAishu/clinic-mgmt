@@ -1,6 +1,10 @@
 package com.hospital.common.enums;
 
 public enum Role {
-    USER,   // Patient role
-    ADMIN   // Doctor/Admin role
+    PATIENT,
+    DOCTOR,
+    NURSE,
+    RECEPTIONIST,
+    ADMIN,
+    USER  // Legacy - maps to PATIENT
 }
