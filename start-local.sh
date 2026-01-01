@@ -15,7 +15,7 @@ echo "=========================================="
 check_infra() {
     if ! docker ps | grep -q hospital-postgres; then
         echo "Starting infrastructure..."
-        docker-compose -f docker-compose-infra.yml up -d
+        docker-compose up -d
         echo "Waiting for infrastructure to be ready..."
         sleep 15
     else

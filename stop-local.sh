@@ -19,4 +19,4 @@ done
 echo ""
 echo "All services stopped."
 echo ""
-echo "To stop infrastructure: docker-compose -f docker-compose-infra.yml down"
+echo "To stop infrastructure: docker-compose down"
