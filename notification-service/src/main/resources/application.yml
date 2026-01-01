@@ -4,19 +4,24 @@ server:
 spring:
   application:
     name: notification-service
-
   datasource:
-    url: jdbc:postgresql://localhost:5432/hospital_db?currentSchema=notification_service
-    username: hospital_user
-    password: hospital_password
+    url: jdbc:postgresql://localhost:5432/notification_service
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
-
-  # RabbitMQ Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
   rabbitmq:
     host: localhost
     port: 5672
-    username: hospital_user
-    password: hospital_password
+    username: guest
+    password: guest
     listener:
       simple:
         acknowledge-mode: manual
@@ -27,8 +32,6 @@ spring:
           max-attempts: 3
           max-interval: 10000
           multiplier: 2.0
-
-  # Mail Configuration
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -45,8 +48,6 @@ spring:
           timeout: 5000
           writetimeout: 5000
     default-encoding: UTF-8
-
-  # Thymeleaf Configuration for Email Templates
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html
@@ -54,8 +55,6 @@ spring:
     encoding: UTF-8
     cache: false
     check-template-location: true
-
-  # Redis Configuration for Rate Limiting
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -65,7 +64,9 @@ spring:
   cache:
     type: redis
 
-# Eureka Client Configuration
+jwt:
+  secret: ${JWT_SECRET:HospitalManagementSystemSecretKeyForHS512Algorithm2024SecureTokenGeneration}
+
 eureka:
   client:
     service-url:
@@ -73,11 +74,8 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
   instance:
-    hostname: localhost
     prefer-ip-address: true
-    instance-id: ${spring.application.name}:${server.port}
 
-# Actuator Configuration
 management:
   endpoints:
     web:
@@ -87,7 +85,6 @@ management:
     health:
       show-details: always
 
-# Notification Service Configuration
 notification:
   from-email: ${NOTIFICATION_FROM_EMAIL:noreply@hospital.com}
   from-name: ${NOTIFICATION_FROM_NAME:Hospital Management System}
@@ -95,7 +92,6 @@ notification:
     max-attempts: 3
     delay-ms: 1000
 
-# RabbitMQ Queue Configuration
 rabbitmq:
   queues:
     appointment-notifications: appointment.notifications
@@ -112,7 +108,6 @@ rabbitmq:
     prescription-created: notification.prescription.created
     invoice-generated: notification.invoice.generated
 
-# Logging Configuration
 logging:
   level:
     com.hospital.notification: DEBUG

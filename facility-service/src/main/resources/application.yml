@@ -4,11 +4,10 @@ server:
 spring:
   application:
     name: facility-service
-  config:
   datasource:
-    url: jdbc:postgresql://localhost:5432/hospital_db?currentSchema=facility_service
-    username: hospital_user
-    password: hospital_password
+    url: jdbc:postgresql://localhost:5432/facility_service
+    username: postgres
+    password: postgres
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
@@ -18,35 +17,40 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-        default_schema: facility_service
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password: redis_password
   rabbitmq:
     host: localhost
     port: 5672
-    username: hospital_user
-    password: hospital_password
+    username: guest
+    password: guest
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
   cache:
     type: redis
-    redis:
-      time-to-live: 1800000
+
+jwt:
+  secret: ${JWT_SECRET:HospitalManagementSystemSecretKeyForHS512Algorithm2024SecureTokenGeneration}
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
   instance:
     prefer-ip-address: true
-    instance-id: ${spring.application.name}:${random.uuid}
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
 
 logging:
   level:

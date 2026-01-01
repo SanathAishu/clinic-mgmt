@@ -5,12 +5,6 @@ spring:
   application:
     name: api-gateway
   cloud:
-    config:
-      uri: http://localhost:8888
-      fail-fast: true
-      retry:
-        max-attempts: 5
-        initial-interval: 1000
     gateway:
       discovery:
         locator:

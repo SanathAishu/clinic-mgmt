@@ -4,13 +4,6 @@ server:
 spring:
   application:
     name: auth-service
-  config:
-  cloud:
-    config:
-      fail-fast: false
-      retry:
-        max-attempts: 3
-        initial-interval: 1000
   datasource:
     url: jdbc:postgresql://localhost:5432/auth_service
     username: postgres
