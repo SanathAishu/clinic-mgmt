@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.hospital.audit", "com.hospital.common"})
 @EnableDiscoveryClient
 @EnableJpaAuditing
 public class AuditServiceApplication {

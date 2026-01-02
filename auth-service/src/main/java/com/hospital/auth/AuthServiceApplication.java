@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 /**
  * Auth Service - HS512 JWT authentication with UUID-based users
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.hospital.auth", "com.hospital.common"})
 @EnableDiscoveryClient
 @EnableJpaAuditing
 public class AuthServiceApplication {

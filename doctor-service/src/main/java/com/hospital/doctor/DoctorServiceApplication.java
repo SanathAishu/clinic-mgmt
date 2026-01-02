@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 /**
  * Doctor Service - Doctor management with UUID, events, and caching
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.hospital.doctor", "com.hospital.common"})
 @EnableDiscoveryClient
 @EnableFeignClients
 @EnableCaching

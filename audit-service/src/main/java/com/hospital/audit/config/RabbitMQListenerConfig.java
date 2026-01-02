@@ -3,7 +3,6 @@ package com.hospital.audit.config;
 import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,11 +23,6 @@ public class RabbitMQListenerConfig {
     public static final String PRESCRIPTION_AUDIT_QUEUE = "audit.prescription.queue";
     public static final String FACILITY_AUDIT_QUEUE = "audit.facility.queue";
     public static final String DISCHARGE_AUDIT_QUEUE = "audit.discharge.queue";
-
-    @Bean
-    public MessageConverter jsonMessageConverter() {
-        return new Jackson2JsonMessageConverter();
-    }
 
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(

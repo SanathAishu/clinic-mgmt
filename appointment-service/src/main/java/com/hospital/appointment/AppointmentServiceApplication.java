@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 /**
  * Appointment Service - Scheduling with snapshots, Feign clients, and event consumers
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.hospital.appointment", "com.hospital.common"})
 @EnableDiscoveryClient
 @EnableFeignClients
 @EnableCaching

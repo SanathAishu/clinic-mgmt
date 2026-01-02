@@ -7,7 +7,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 /**
  * Notification Service - Handles email/SMS notifications for hospital events
  */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.hospital.notification", "com.hospital.common"})
 @EnableDiscoveryClient
 public class NotificationServiceApplication {
 
