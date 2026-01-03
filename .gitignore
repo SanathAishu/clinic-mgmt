@@ -54,3 +54,7 @@ surefire-reports/
 *.temp
 *.swp
 *~
+
+# Developer tools and planning
+.ai/
+CLAUDE.md
