@@ -9,6 +9,7 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Service Router for API Gateway.
@@ -31,6 +32,20 @@ import java.util.Map;
  */
 @ApplicationScoped
 public class ServiceRouter {
+
+    // Hop-by-hop headers that should NOT be forwarded to backend services
+    private static final Set<String> HOP_BY_HOP_HEADERS = Set.of(
+            "host",
+            "connection",
+            "keep-alive",
+            "proxy-authenticate",
+            "proxy-authorization",
+            "te",
+            "trailer",
+            "transfer-encoding",
+            "upgrade",
+            "content-length"  // Let WebClient set this based on actual body
+    );
 
     @Inject
     WebClient webClient;
@@ -77,48 +92,47 @@ public class ServiceRouter {
 
         Log.debugf("Routing %s %s -> %s", method, path, targetUrl);
 
-        // Get request body (if present)
-        context.request().body().onSuccess(buffer -> {
-            // Create request to backend service
-            var request = webClient.requestAbs(method, targetUrl);
+        // Get request body from RoutingContext (already parsed by BodyHandler)
+        // Using context.body().buffer() instead of context.request().body()
+        // because BodyHandler has already consumed the request body
+        var buffer = context.body().buffer();
 
-            // Forward all headers (including X-Tenant-Id, X-User-Id, Authorization)
-            context.request().headers().forEach(header ->
-                    request.putHeader(header.getKey(), header.getValue())
+        // Create request to backend service
+        var request = webClient.requestAbs(method, targetUrl);
+
+        // Forward headers (except hop-by-hop headers)
+        // Includes X-Tenant-Id, X-User-Id, Authorization, Content-Type
+        context.request().headers().forEach(header -> {
+            String headerName = header.getKey().toLowerCase();
+            if (!HOP_BY_HOP_HEADERS.contains(headerName)) {
+                request.putHeader(header.getKey(), header.getValue());
+            }
+        });
+
+        // Send request with body if present
+        var sendFuture = (buffer != null && buffer.length() > 0)
+                ? request.sendBuffer(buffer)
+                : request.send();
+
+        sendFuture.onSuccess(response -> {
+            // Forward response status and headers
+            context.response().setStatusCode(response.statusCode());
+            response.headers().forEach(header ->
+                    context.response().putHeader(header.getKey(), header.getValue())
             );
 
-            // Send request with body
-            var sendFuture = buffer.length() > 0
-                    ? request.sendBuffer(buffer)
-                    : request.send();
+            // Forward response body
+            context.response().end(response.bodyAsBuffer());
 
-            sendFuture.onSuccess(response -> {
-                // Forward response status and headers
-                context.response().setStatusCode(response.statusCode());
-                response.headers().forEach(header ->
-                        context.response().putHeader(header.getKey(), header.getValue())
-                );
-
-                // Forward response body
-                context.response().end(response.bodyAsBuffer());
-
-                Log.debugf("Routed %s %s -> %d", method, path, response.statusCode());
-
-            }).onFailure(error -> {
-                Log.errorf(error, "Error routing %s %s to %s", method, path, targetUrl);
-
-                context.response()
-                        .setStatusCode(503)
-                        .putHeader("Content-Type", "application/json")
-                        .end("{\"error\":\"Service unavailable: " + error.getMessage() + "\"}");
-            });
+            Log.debugf("Routed %s %s -> %d", method, path, response.statusCode());
 
         }).onFailure(error -> {
-            Log.errorf(error, "Error reading request body for %s %s", method, path);
+            Log.errorf(error, "Error routing %s %s to %s", method, path, targetUrl);
+
             context.response()
-                    .setStatusCode(400)
+                    .setStatusCode(503)
                     .putHeader("Content-Type", "application/json")
-                    .end("{\"error\":\"Invalid request body\"}");
+                    .end("{\"error\":\"Service unavailable: " + error.getMessage() + "\"}");
         });
     }
 

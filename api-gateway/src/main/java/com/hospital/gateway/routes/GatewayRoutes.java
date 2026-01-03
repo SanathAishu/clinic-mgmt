@@ -2,7 +2,7 @@ package com.hospital.gateway.routes;
 
 import com.hospital.gateway.filter.JwtAuthFilter;
 import com.hospital.gateway.filter.RateLimitFilter;
-import com.hospital.gateway.router.StorkServiceRouter;
+import com.hospital.gateway.router.ServiceRouter;
 import io.quarkus.logging.Log;
 import io.quarkus.runtime.StartupEvent;
 import io.vertx.ext.web.Router;
@@ -42,7 +42,7 @@ public class GatewayRoutes {
     RateLimitFilter rateLimitFilter;
 
     @Inject
-    StorkServiceRouter serviceRouter;
+    ServiceRouter serviceRouter;
 
     public void configureRoutes(@Observes StartupEvent event) {
         Log.info("Configuring API Gateway routes...");
@@ -95,7 +95,7 @@ public class GatewayRoutes {
         });
 
         router.get("/api/gateway/routes").handler(ctx -> {
-            var routes = serviceRouter.getServiceMap();
+            var routes = serviceRouter.getRoutingMap();
             var json = new StringBuilder("{\"routes\":{");
             routes.forEach((path, url) -> {
                 json.append("\"").append(path).append("\":\"").append(url).append("\",");

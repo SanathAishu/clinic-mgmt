@@ -58,69 +58,64 @@ public class StorkServiceRouter {
         HttpMethod method = context.request().method();
         Log.debugf("Routing %s %s via Stork service: %s", method, path, serviceName);
 
-        // Get request body
-        context.request().body().onSuccess(buffer -> {
-            // Use Stork to get service instance
-            stork.getService(serviceName)
-                    .selectInstanceAndRecordStart(false)
-                    .subscribe().with(
-                    serviceInstance -> {
-                        // Build target URL from discovered service instance
-                        String targetUrl = String.format("http://%s:%d%s",
-                                serviceInstance.getHost(),
-                                serviceInstance.getPort(),
-                                path);
+        // Get request body from RoutingContext (already parsed by BodyHandler)
+        // Using context.body().buffer() instead of context.request().body()
+        // because BodyHandler has already consumed the request body
+        var buffer = context.body().buffer();
 
-                        Log.debugf("Stork resolved %s to %s", serviceName, targetUrl);
+        // Use Stork to get service instance
+        stork.getService(serviceName)
+                .selectInstanceAndRecordStart(false)
+                .subscribe().with(
+                serviceInstance -> {
+                    // Build target URL from discovered service instance
+                    String targetUrl = String.format("http://%s:%d%s",
+                            serviceInstance.getHost(),
+                            serviceInstance.getPort(),
+                            path);
 
-                        // Create request to backend service
-                        var request = webClient.requestAbs(method, targetUrl);
+                    Log.debugf("Stork resolved %s to %s", serviceName, targetUrl);
 
-                        // Forward all headers
-                        context.request().headers().forEach(header ->
-                                request.putHeader(header.getKey(), header.getValue())
+                    // Create request to backend service
+                    var request = webClient.requestAbs(method, targetUrl);
+
+                    // Forward all headers
+                    context.request().headers().forEach(header ->
+                            request.putHeader(header.getKey(), header.getValue())
+                    );
+
+                    // Send request with body if present
+                    var sendFuture = (buffer != null && buffer.length() > 0)
+                            ? request.sendBuffer(buffer)
+                            : request.send();
+
+                    sendFuture.onSuccess(response -> {
+                        // Forward response
+                        context.response().setStatusCode(response.statusCode());
+                        response.headers().forEach(header ->
+                                context.response().putHeader(header.getKey(), header.getValue())
                         );
+                        context.response().end(response.bodyAsBuffer());
 
-                        // Send request
-                        var sendFuture = buffer.length() > 0
-                                ? request.sendBuffer(buffer)
-                                : request.send();
+                        Log.debugf("Routed %s %s → %d via %s",
+                                method, path, response.statusCode(), targetUrl);
 
-                        sendFuture.onSuccess(response -> {
-                            // Forward response
-                            context.response().setStatusCode(response.statusCode());
-                            response.headers().forEach(header ->
-                                    context.response().putHeader(header.getKey(), header.getValue())
-                            );
-                            context.response().end(response.bodyAsBuffer());
-
-                            Log.debugf("Routed %s %s → %d via %s",
-                                    method, path, response.statusCode(), targetUrl);
-
-                        }).onFailure(error -> {
-                            Log.errorf(error, "Error routing %s %s to %s", method, path, targetUrl);
-                            context.response()
-                                    .setStatusCode(503)
-                                    .putHeader("Content-Type", "application/json")
-                                    .end("{\"error\":\"Service unavailable: " + error.getMessage() + "\"}");
-                        });
-                    },
-                    error -> {
-                        Log.errorf(error, "Stork failed to resolve service: %s", serviceName);
+                    }).onFailure(error -> {
+                        Log.errorf(error, "Error routing %s %s to %s", method, path, targetUrl);
                         context.response()
                                 .setStatusCode(503)
                                 .putHeader("Content-Type", "application/json")
-                                .end("{\"error\":\"Service discovery failed: " + error.getMessage() + "\"}");
-                    }
-            );
-
-        }).onFailure(error -> {
-            Log.errorf(error, "Error reading request body for %s %s", method, path);
-            context.response()
-                    .setStatusCode(400)
-                    .putHeader("Content-Type", "application/json")
-                    .end("{\"error\":\"Invalid request body\"}");
-        });
+                                .end("{\"error\":\"Service unavailable: " + error.getMessage() + "\"}");
+                    });
+                },
+                error -> {
+                    Log.errorf(error, "Stork failed to resolve service: %s", serviceName);
+                    context.response()
+                            .setStatusCode(503)
+                            .putHeader("Content-Type", "application/json")
+                            .end("{\"error\":\"Service discovery failed: " + error.getMessage() + "\"}");
+                }
+        );
     }
 
     private String getServiceName(String path) {
