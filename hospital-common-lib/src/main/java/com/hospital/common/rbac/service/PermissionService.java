@@ -219,7 +219,7 @@ public class PermissionService {
 
     /**
      * Get all permissions for a specific user in the current tenant.
-     * Combines role-based permissions.
+     * Combines role-based permissions using eager-loaded roles (no N+1 queries).
      *
      * @param userId   User ID
      * @param tenantId Tenant identifier
@@ -238,11 +238,13 @@ public class PermissionService {
                             .map(UserRole::getRoleId)
                             .toList();
 
-                    // Get roles with permissions
-                    return roleRepository.findByIdsAndTenant(tenantId, roleIds)
+                    // Get roles with permissions eagerly loaded (LEFT JOIN FETCH prevents N+1 queries)
+                    // Changed from findByIdsAndTenant() to findByIdsWithPermissions()
+                    return roleRepository.findByIdsWithPermissions(tenantId, roleIds)
                             .map(roles -> {
                                 Set<String> permissions = new HashSet<>();
                                 for (Role role : roles) {
+                                    // No N+1 issue here: permissions are already loaded in the query above
                                     for (Permission permission : role.getPermissions()) {
                                         permissions.add(permission.getName());
                                     }

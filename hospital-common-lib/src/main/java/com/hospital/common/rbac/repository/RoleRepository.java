@@ -92,6 +92,29 @@ public class RoleRepository implements PanacheRepositoryBase<Role, UUID> {
     }
 
     /**
+     * Find roles by IDs within a tenant with eager-loaded permissions (LEFT JOIN FETCH).
+     * This prevents N+1 queries when accessing the permissions collection.
+     *
+     * IMPORTANT: This query uses LEFT JOIN FETCH to load permissions in a single query,
+     * eliminating N separate lazy-load queries that would otherwise occur when iterating
+     * through roles and accessing their permissions.
+     *
+     * Example: Without JOIN FETCH, accessing permissions on 5 roles = 5 extra queries
+     *          With JOIN FETCH, all permissions loaded in this single query
+     *
+     * @param tenantId Tenant identifier
+     * @param roleIds  List of role IDs
+     * @return List of roles with permissions eagerly loaded
+     */
+    public Uni<List<Role>> findByIdsWithPermissions(String tenantId, List<UUID> roleIds) {
+        return find(
+            "SELECT DISTINCT r FROM Role r LEFT JOIN FETCH r.permissions " +
+            "WHERE r.tenantId = ?1 AND r.id IN ?2 AND r.active = true",
+            tenantId, roleIds
+        ).list();
+    }
+
+    /**
      * Deactivate a role (soft delete).
      *
      * @param roleId Role ID

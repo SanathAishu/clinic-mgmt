@@ -239,6 +239,8 @@ public class AuthService {
     /**
      * Get user's roles and permissions from RBAC tables.
      *
+     * Uses eager-loaded roles (LEFT JOIN FETCH) to prevent N+1 queries.
+     *
      * @param tenantId Tenant ID
      * @param userId User ID
      * @return Roles and permissions wrapper
@@ -259,14 +261,16 @@ public class AuthService {
                     .map(ur -> ur.getRoleId())
                     .toList();
 
-                // Get role details with permissions
-                return roleRepository.findByIdsAndTenant(tenantId, roleIds)
+                // Get role details with permissions eagerly loaded (LEFT JOIN FETCH prevents N+1 queries)
+                // Changed from findByIdsAndTenant() to findByIdsWithPermissions()
+                return roleRepository.findByIdsWithPermissions(tenantId, roleIds)
                     .map(roles -> {
                         List<String> roleNames = roles.stream()
                             .filter(r -> r.isActive())
                             .map(r -> r.getName())
                             .toList();
 
+                        // No N+1 issue here: permissions are already loaded in the query above
                         Set<String> permissionNames = new HashSet<>();
                         roles.stream()
                             .filter(r -> r.isActive())
