@@ -31,7 +31,8 @@ echo -e "${BLUE}╚════════════════════�
 echo -e "\n${YELLOW}[1/4] Starting infrastructure containers...${NC}"
 
 cd "$PROJECT_DIR/docker"
-docker-compose up -d postgres redis rabbitmq consul
+# Try to start existing containers first, then create if needed
+docker-compose start postgres redis rabbitmq consul 2>/dev/null || docker-compose up -d postgres redis rabbitmq consul
 echo -e "${GREEN}✓ PostgreSQL, Redis, RabbitMQ, Consul started${NC}"
 
 # Wait for services to be healthy

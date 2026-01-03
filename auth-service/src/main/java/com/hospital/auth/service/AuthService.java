@@ -64,6 +64,7 @@ public class AuthService {
     @ConfigProperty(name = "auth.lockout-duration-minutes", defaultValue = "30")
     int lockoutDurationMinutes;
 
+    @WithSession
     public Uni<LoginResponse> login(String tenantId, LoginRequest request) {
         return userRepository.findByEmail(tenantId, request.getEmail())
             .onItem().ifNull().failWith(() -> new UnauthorizedException("Invalid email or password"))

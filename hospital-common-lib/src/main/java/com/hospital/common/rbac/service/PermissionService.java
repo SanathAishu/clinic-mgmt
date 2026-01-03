@@ -8,6 +8,7 @@ import com.hospital.common.rbac.repository.PermissionRepository;
 import com.hospital.common.rbac.repository.RoleRepository;
 import com.hospital.common.rbac.repository.UserResourcePermissionRepository;
 import com.hospital.common.rbac.repository.UserRoleRepository;
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.quarkus.logging.Log;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -142,6 +143,7 @@ public class PermissionService {
         }
     }
 
+    @WithSession
     public Uni<Set<String>> getUserPermissions(UUID userId, String tenantId) {
         return userRoleRepository.findValidByUserAndTenant(userId, tenantId)
                 .chain(userRoles -> {
