@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Doctor Service Domain Events
- */
 public final class DoctorEvents {
 
     private DoctorEvents() {

@@ -37,14 +37,6 @@ public class ExamplePatientEvent implements TenantAware, Auditable {
     private final String patientName;
     private final String action; // e.g., "CREATED", "UPDATED", "DELETED"
 
-    /**
-     * Constructor with all required fields.
-     *
-     * @param tenantId Tenant identifier (REQUIRED for multi-tenancy)
-     * @param patientId Patient UUID
-     * @param patientName Patient name
-     * @param action Action type (CREATED, UPDATED, DELETED)
-     */
     public ExamplePatientEvent(String tenantId, UUID patientId,
                                String patientName, String action) {
         // Validate inputs (fail-fast)

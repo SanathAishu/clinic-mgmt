@@ -43,17 +43,9 @@ public class UserRole extends PanacheEntityBase {
     @Column(name = "tenant_id", nullable = false, length = 50)
     private String tenantId;
 
-    /**
-     * Optional: Department within the organization
-     * Examples: CARDIOLOGY, EMERGENCY, PEDIATRICS
-     */
     @Column(length = 50)
     private String department;
 
-    /**
-     * Role assignment can be temporary.
-     * Example: Temporary admin access for auditing
-     */
     @Column(name = "valid_from")
     private LocalDateTime validFrom;
 
@@ -77,11 +69,6 @@ public class UserRole extends PanacheEntityBase {
         }
     }
 
-    /**
-     * Check if this role assignment is currently valid.
-     *
-     * @return true if valid and active
-     */
     public boolean isValid() {
         if (!active) {
             return false;

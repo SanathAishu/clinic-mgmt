@@ -8,9 +8,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Appointment Service Domain Events
- */
 public final class AppointmentEvents {
 
     private AppointmentEvents() {

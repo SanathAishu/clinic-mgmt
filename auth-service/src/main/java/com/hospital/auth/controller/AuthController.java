@@ -157,9 +157,6 @@ public class AuthController {
         return Response.ok(new HealthResponse("UP", "auth-service")).build();
     }
 
-    /**
-     * Error response DTO.
-     */
     public static class ErrorResponse {
         public String error;
 
@@ -168,9 +165,6 @@ public class AuthController {
         }
     }
 
-    /**
-     * Health response DTO.
-     */
     public static class HealthResponse {
         public String status;
         public String service;

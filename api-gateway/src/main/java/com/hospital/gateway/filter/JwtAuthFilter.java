@@ -37,12 +37,6 @@ public class JwtAuthFilter {
     @Inject
     JWTParser jwtParser;
 
-    /**
-     * Authenticate request by validating JWT token.
-     *
-     * @param context Vert.x routing context
-     * @return true if authenticated, false otherwise
-     */
     public boolean authenticate(RoutingContext context) {
         HttpServerRequest request = context.request();
 
@@ -120,12 +114,6 @@ public class JwtAuthFilter {
         }
     }
 
-    /**
-     * Check if path is public (no authentication required).
-     *
-     * @param path Request path
-     * @return true if public path
-     */
     public boolean isPublicPath(String path) {
         return path.startsWith("/api/auth/login") ||
                path.startsWith("/api/auth/register") ||

@@ -45,34 +45,18 @@ public class Permission extends PanacheEntityBase {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    /**
-     * Permission name in format: resource:action
-     * Examples: "patient:read", "medical_record:write"
-     */
     @Column(nullable = false, unique = true, length = 100)
     private String name;
 
-    /**
-     * Resource type this permission applies to.
-     * Examples: patient, doctor, medical_record, prescription
-     */
     @Column(nullable = false, length = 50)
     private String resource;
 
-    /**
-     * Action that can be performed.
-     * Examples: read, write, delete, create, update, manage
-     */
     @Column(nullable = false, length = 50)
     private String action;
 
     @Column(length = 255)
     private String description;
 
-    /**
-     * System permissions cannot be deleted.
-     * These are core permissions required for application functionality.
-     */
     @Column(name = "is_system_permission", nullable = false)
     private boolean isSystemPermission = false;
 
@@ -102,13 +86,6 @@ public class Permission extends PanacheEntityBase {
         updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * Factory method to create a permission from resource and action.
-     *
-     * @param resource Resource type
-     * @param action   Action type
-     * @return Permission instance
-     */
     public static Permission of(String resource, String action) {
         Permission permission = new Permission();
         permission.setResource(resource);
@@ -117,12 +94,6 @@ public class Permission extends PanacheEntityBase {
         return permission;
     }
 
-    /**
-     * Factory method to create a permission from name.
-     *
-     * @param name Permission name (e.g., "patient:read")
-     * @return Permission instance
-     */
     public static Permission of(String name) {
         Permission permission = new Permission();
         permission.setName(name);
@@ -134,23 +105,10 @@ public class Permission extends PanacheEntityBase {
         return permission;
     }
 
-    /**
-     * Check if this permission matches a given permission string.
-     *
-     * @param permissionString Permission string to check
-     * @return true if matches
-     */
     public boolean matches(String permissionString) {
         return this.name.equals(permissionString);
     }
 
-    /**
-     * Check if this permission allows a specific action on a resource.
-     *
-     * @param resource Resource to check
-     * @param action   Action to check
-     * @return true if matches
-     */
     public boolean allows(String resource, String action) {
         return this.resource.equals(resource) && this.action.equals(action);
     }

@@ -31,14 +31,8 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Authentication service with multi-tenancy and RBAC integration.
- *
- * Responsibilities:
- * - User login with JWT generation
- * - User registration
- * - Password validation
- * - Account lockout management
- * - JWT token generation with roles and permissions
+ * User authentication with JWT generation, multi-tenancy, and RBAC.
+ * Security: tenantId from trusted source only (header/subdomain), not request body.
  */
 @ApplicationScoped
 public class AuthService {
@@ -70,40 +64,23 @@ public class AuthService {
     @ConfigProperty(name = "auth.lockout-duration-minutes", defaultValue = "30")
     int lockoutDurationMinutes;
 
-    /**
-     * Authenticate user and generate JWT token.
-     *
-     * Security:
-     * - tenantId MUST come from trusted source (subdomain/header), NOT request body
-     * - Password verified using BCrypt
-     * - Account lockout after failed attempts
-     * - JWT contains tenantId, userId, roles, permissions
-     *
-     * @param tenantId Tenant ID (from subdomain/header)
-     * @param request Login credentials
-     * @return Login response with JWT and user info
-     */
     public Uni<LoginResponse> login(String tenantId, LoginRequest request) {
         return userRepository.findByEmail(tenantId, request.getEmail())
             .onItem().ifNull().failWith(() -> new UnauthorizedException("Invalid email or password"))
             .chain(user -> {
-                // Check if account is locked
                 if (user.isLocked()) {
                     return Uni.createFrom().failure(
                         new ForbiddenException("Account is temporarily locked. Please try again later.")
                     );
                 }
 
-                // Check if account is active
                 if (!user.isActive()) {
                     return Uni.createFrom().failure(
                         new ForbiddenException("Account is inactive. Please contact support.")
                     );
                 }
 
-                // Verify password
                 if (!BcryptUtil.matches(request.getPassword(), user.getPasswordHash())) {
-                    // Increment failed login attempts
                     user.incrementFailedLoginAttempts(lockoutThreshold, lockoutDurationMinutes);
                     return userRepository.persist(user)
                         .chain(() -> Uni.createFrom().failure(
@@ -111,23 +88,15 @@ public class AuthService {
                         ));
                 }
 
-                // Password correct - reset failed attempts
                 user.resetFailedLoginAttempts();
 
-                // Get user's roles and permissions
                 return userRepository.persist(user)
                     .chain(() -> getUserRolesAndPermissions(tenantId, user.getId()))
                     .chain(rolesAndPerms -> {
-                        List<String> roles = rolesAndPerms.roles;
-                        Set<String> permissions = rolesAndPerms.permissions;
-
-                        // Generate JWT token
-                        String token = generateJwtToken(user, roles, permissions);
-
-                        // Build user DTO
+                        String token = generateJwtToken(user, rolesAndPerms.roles, rolesAndPerms.permissions);
                         UserDto userDto = toUserDto(user);
-                        userDto.setRoles(roles);
-                        userDto.setPermissions(permissions);
+                        userDto.setRoles(rolesAndPerms.roles);
+                        userDto.setPermissions(rolesAndPerms.permissions);
 
                         return Uni.createFrom().item(
                             new LoginResponse(token, jwtExpirationSeconds, userDto)
@@ -136,22 +105,8 @@ public class AuthService {
             });
     }
 
-    /**
-     * Register new user.
-     *
-     * Security:
-     * - tenantId from trusted source
-     * - Email uniqueness checked per tenant
-     * - Password hashed with BCrypt
-     * - Default role assigned (configurable)
-     *
-     * @param tenantId Tenant ID
-     * @param request Registration data
-     * @return Created user DTO
-     */
     @WithSession
     public Uni<UserDto> register(String tenantId, RegisterRequest request) {
-        // Check if email already exists
         return userRepository.existsByEmail(tenantId, request.getEmail())
             .chain(exists -> {
                 if (exists) {
@@ -160,10 +115,7 @@ public class AuthService {
                     );
                 }
 
-                // Hash password
                 String passwordHash = BcryptUtil.bcryptHash(request.getPassword());
-
-                // Create user entity
                 User user = new User(
                     tenantId,
                     request.getName(),
@@ -174,12 +126,8 @@ public class AuthService {
                 user.setActive(true);
                 user.setEmailVerified(false);
 
-                // Persist user
                 return userRepository.persist(user)
                     .chain(savedUser -> {
-                        // TODO: Assign default role (e.g., PATIENT)
-
-                        // Publish UserRegisteredEvent to RabbitMQ
                         UserRegisteredEvent event = new UserRegisteredEvent(
                             tenantId,
                             savedUser.getId(),
@@ -188,8 +136,7 @@ public class AuthService {
                             savedUser.getPhone()
                         );
 
-                        Log.infof("User registered: %s for tenant: %s, publishing event...",
-                            savedUser.getEmail(), tenantId);
+                        Log.infof("User registered: %s for tenant: %s", savedUser.getEmail(), tenantId);
 
                         return Uni.createFrom().completionStage(userEventEmitter.send(event))
                             .map(ignore -> toUserDto(savedUser))
@@ -201,25 +148,6 @@ public class AuthService {
             });
     }
 
-    /**
-     * Generate JWT token with tenant and RBAC claims.
-     *
-     * Claims:
-     * - sub: userId (UUID)
-     * - tenantId: tenant discriminator
-     * - email: user's email
-     * - name: user's name
-     * - roles: array of role names
-     * - permissions: array of permission names
-     * - iss: issuer
-     * - iat: issued at
-     * - exp: expiration
-     *
-     * @param user User entity
-     * @param roles Role names
-     * @param permissions Permission names
-     * @return JWT token string
-     */
     private String generateJwtToken(User user, List<String> roles, Set<String> permissions) {
         Instant now = Instant.now();
         Instant expiry = now.plusSeconds(jwtExpirationSeconds);
@@ -236,33 +164,19 @@ public class AuthService {
             .sign();
     }
 
-    /**
-     * Get user's roles and permissions from RBAC tables.
-     *
-     * Uses eager-loaded roles (LEFT JOIN FETCH) to prevent N+1 queries.
-     *
-     * @param tenantId Tenant ID
-     * @param userId User ID
-     * @return Roles and permissions wrapper
-     */
     private Uni<RolesAndPermissions> getUserRolesAndPermissions(String tenantId, java.util.UUID userId) {
-        // Get user's active roles
         return userRoleRepository.findValidByUserAndTenant(userId, tenantId)
             .chain(userRoles -> {
                 if (userRoles.isEmpty()) {
-                    // No roles assigned - return empty
                     return Uni.createFrom().item(
                         new RolesAndPermissions(List.of(), Set.of())
                     );
                 }
 
-                // Get role UUIDs
                 List<java.util.UUID> roleIds = userRoles.stream()
                     .map(ur -> ur.getRoleId())
                     .toList();
 
-                // Get role details with permissions eagerly loaded (LEFT JOIN FETCH prevents N+1 queries)
-                // Changed from findByIdsAndTenant() to findByIdsWithPermissions()
                 return roleRepository.findByIdsWithPermissions(tenantId, roleIds)
                     .map(roles -> {
                         List<String> roleNames = roles.stream()
@@ -270,7 +184,6 @@ public class AuthService {
                             .map(r -> r.getName())
                             .toList();
 
-                        // No N+1 issue here: permissions are already loaded in the query above
                         Set<String> permissionNames = new HashSet<>();
                         roles.stream()
                             .filter(r -> r.isActive())
@@ -285,9 +198,6 @@ public class AuthService {
             });
     }
 
-    /**
-     * Convert User entity to UserDto.
-     */
     private UserDto toUserDto(User user) {
         return new UserDto(
             user.getId(),
@@ -303,9 +213,6 @@ public class AuthService {
         );
     }
 
-    /**
-     * Helper class to hold roles and permissions.
-     */
     private static class RolesAndPermissions {
         final List<String> roles;
         final Set<String> permissions;

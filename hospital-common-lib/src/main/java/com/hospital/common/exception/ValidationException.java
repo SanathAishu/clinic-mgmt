@@ -2,9 +2,6 @@ package com.hospital.common.exception;
 
 import jakarta.ws.rs.core.Response;
 
-/**
- * Exception thrown when input validation fails.
- */
 public class ValidationException extends BaseException {
 
     private final String fieldName;

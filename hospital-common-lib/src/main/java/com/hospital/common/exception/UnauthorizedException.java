@@ -2,9 +2,6 @@ package com.hospital.common.exception;
 
 import jakarta.ws.rs.core.Response;
 
-/**
- * Exception thrown when authentication fails.
- */
 public class UnauthorizedException extends BaseException {
 
     public UnauthorizedException(String message) {

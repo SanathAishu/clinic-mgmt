@@ -104,13 +104,6 @@ public class ConsentService {
                 );
     }
 
-    /**
-     * Withdraw a specific consent.
-     *
-     * @param consentId Consent ID
-     * @param reason    Reason for withdrawal
-     * @return Updated consent
-     */
     public Uni<Consent> withdrawConsent(UUID consentId, String reason) {
         return consentRepository.findById(consentId)
                 .onItem().ifNull().failWith(() ->
@@ -132,13 +125,6 @@ public class ConsentService {
                 );
     }
 
-    /**
-     * Withdraw all consents for a patient (right to be forgotten).
-     *
-     * @param patientId Patient ID
-     * @param reason    Reason for withdrawal
-     * @return Number of consents withdrawn
-     */
     public Uni<Integer> withdrawAllConsents(UUID patientId, String reason) {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
 
@@ -149,25 +135,11 @@ public class ConsentService {
                 );
     }
 
-    /**
-     * Check if patient has valid consent for a purpose.
-     *
-     * @param patientId Patient ID
-     * @param purpose   Consent purpose
-     * @return true if valid consent exists
-     */
     public Uni<Boolean> hasValidConsent(UUID patientId, Consent.ConsentPurpose purpose) {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return consentRepository.hasValidConsent(patientId, tenantId, purpose);
     }
 
-    /**
-     * Require valid consent or throw exception.
-     *
-     * @param patientId Patient ID
-     * @param purpose   Consent purpose
-     * @return Void uni that fails if consent is missing
-     */
     public Uni<Void> requireConsent(UUID patientId, Consent.ConsentPurpose purpose) {
         return hasValidConsent(patientId, purpose)
                 .chain(hasConsent -> {
@@ -182,34 +154,16 @@ public class ConsentService {
                 });
     }
 
-    /**
-     * Get all active consents for a patient.
-     *
-     * @param patientId Patient ID
-     * @return List of active consents
-     */
     public Uni<List<Consent>> getActiveConsents(UUID patientId) {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return consentRepository.findActiveByPatient(patientId, tenantId);
     }
 
-    /**
-     * Get all consents for a patient (including withdrawn and expired).
-     *
-     * @param patientId Patient ID
-     * @return List of all consents
-     */
     public Uni<List<Consent>> getAllConsents(UUID patientId) {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return consentRepository.findAllByPatient(patientId, tenantId);
     }
 
-    /**
-     * Get consent by ID.
-     *
-     * @param consentId Consent ID
-     * @return Consent
-     */
     public Uni<Consent> getConsentById(UUID consentId) {
         return consentRepository.findById(consentId)
                 .onItem().ifNull().failWith(() ->
@@ -217,12 +171,6 @@ public class ConsentService {
                 );
     }
 
-    /**
-     * Find consents expiring soon.
-     *
-     * @param days Number of days threshold
-     * @return List of expiring consents
-     */
     public Uni<List<Consent>> findExpiringSoon(int days) {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return consentRepository.findExpiringSoon(tenantId, days);
@@ -275,11 +223,6 @@ public class ConsentService {
                 );
     }
 
-    /**
-     * Mark expired consents as expired (scheduled job).
-     *
-     * @return Number of consents marked as expired
-     */
     public Uni<Integer> markExpiredConsents() {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return consentRepository.markExpiredConsents(tenantId)
@@ -288,11 +231,6 @@ public class ConsentService {
                 );
     }
 
-    /**
-     * Get consent statistics for current tenant.
-     *
-     * @return Consent statistics
-     */
     public Uni<ConsentRepository.ConsentStatistics> getStatistics() {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return consentRepository.getStatistics(tenantId);

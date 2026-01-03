@@ -45,59 +45,30 @@ public class User extends PanacheEntityBase {
     @Column(nullable = false, length = 255)
     private String name;
 
-    /**
-     * Email is unique per tenant (not globally).
-     * Used for login along with tenantId.
-     */
     @Column(nullable = false, length = 255)
     private String email;
 
-    /**
-     * Password hash (BCrypt).
-     * NEVER expose in DTOs or APIs.
-     */
     @Column(nullable = false, length = 255)
     private String passwordHash;
 
-    /**
-     * Phone number (optional, for 2FA or notifications).
-     */
     @Column(length = 20)
     private String phone;
 
-    /**
-     * Active status - inactive users cannot login.
-     */
     @Column(nullable = false)
     private boolean active = true;
 
-    /**
-     * Email verification status.
-     */
     @Column(nullable = false)
     private boolean emailVerified = false;
 
-    /**
-     * Failed login attempts counter (for account lockout).
-     */
     @Column(nullable = false)
     private int failedLoginAttempts = 0;
 
-    /**
-     * Account locked until timestamp (null if not locked).
-     */
     @Column
     private LocalDateTime lockedUntil;
 
-    /**
-     * Last successful login timestamp.
-     */
     @Column
     private LocalDateTime lastLoginAt;
 
-    /**
-     * Last password change timestamp.
-     */
     @Column
     private LocalDateTime passwordChangedAt;
 
@@ -124,26 +95,14 @@ public class User extends PanacheEntityBase {
 
     // Business Logic Methods
 
-    /**
-     * Check if account is locked.
-     */
     public boolean isLocked() {
         return lockedUntil != null && LocalDateTime.now().isBefore(lockedUntil);
     }
 
-    /**
-     * Check if user can login.
-     */
     public boolean canLogin() {
         return active && !isLocked();
     }
 
-    /**
-     * Increment failed login attempts and lock account if threshold exceeded.
-     *
-     * @param lockoutThreshold Number of attempts before lockout
-     * @param lockoutDurationMinutes How long to lock account
-     */
     public void incrementFailedLoginAttempts(int lockoutThreshold, int lockoutDurationMinutes) {
         this.failedLoginAttempts++;
         if (this.failedLoginAttempts >= lockoutThreshold) {
@@ -151,18 +110,12 @@ public class User extends PanacheEntityBase {
         }
     }
 
-    /**
-     * Reset failed login attempts after successful login.
-     */
     public void resetFailedLoginAttempts() {
         this.failedLoginAttempts = 0;
         this.lockedUntil = null;
         this.lastLoginAt = LocalDateTime.now();
     }
 
-    /**
-     * Update password hash.
-     */
     public void updatePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
         this.passwordChangedAt = LocalDateTime.now();

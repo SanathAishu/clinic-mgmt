@@ -34,74 +34,30 @@ public class AuditService {
     @Inject
     PermissionService permissionService;
 
-    /**
-     * Get audit logs for tenant with pagination.
-     *
-     * @param tenantId Tenant ID
-     * @param page Page number (0-indexed)
-     * @param size Page size
-     * @return Uni with list of audit logs
-     */
     public Uni<List<AuditLogDto>> getAuditLogs(String tenantId, int page, int size) {
         return permissionService.requirePermission("audit:read")
             .chain(() -> auditLogRepository.findByTenantPaginated(tenantId, page, size))
             .map(logs -> logs.stream().map(this::toDto).toList());
     }
 
-    /**
-     * Get audit logs for a specific user.
-     *
-     * @param tenantId Tenant ID
-     * @param userId User ID
-     * @param page Page number
-     * @param size Page size
-     * @return Uni with list of audit logs
-     */
     public Uni<List<AuditLogDto>> getAuditLogsByUser(String tenantId, UUID userId, int page, int size) {
         return permissionService.requirePermission("audit:read")
             .chain(() -> auditLogRepository.findByUser(tenantId, userId, page, size))
             .map(logs -> logs.stream().map(this::toDto).toList());
     }
 
-    /**
-     * Get audit history for a specific resource.
-     *
-     * @param tenantId Tenant ID
-     * @param resourceType Resource type (e.g., "PATIENT")
-     * @param resourceId Resource ID
-     * @return List of audit logs
-     */
     public Uni<List<AuditLogDto>> getResourceHistory(String tenantId, String resourceType, UUID resourceId) {
         return permissionService.requirePermission("audit:read")
             .chain(() -> auditLogRepository.findByResource(tenantId, resourceType, resourceId))
             .map(logs -> logs.stream().map(this::toDto).toList());
     }
 
-    /**
-     * Get audit logs by action type.
-     *
-     * @param tenantId Tenant ID
-     * @param action Action type (e.g., "CREATE", "UPDATE")
-     * @param page Page number
-     * @param size Page size
-     * @return Uni with list of audit logs
-     */
     public Uni<List<AuditLogDto>> getAuditLogsByAction(String tenantId, String action, int page, int size) {
         return permissionService.requirePermission("audit:read")
             .chain(() -> auditLogRepository.findByAction(tenantId, action, page, size))
             .map(logs -> logs.stream().map(this::toDto).toList());
     }
 
-    /**
-     * Get audit logs within a date range.
-     *
-     * @param tenantId Tenant ID
-     * @param startDate Start date/time
-     * @param endDate End date/time
-     * @param page Page number
-     * @param size Page size
-     * @return Uni with list of audit logs
-     */
     public Uni<List<AuditLogDto>> getAuditLogsByDateRange(String tenantId, LocalDateTime startDate,
                                                            LocalDateTime endDate, int page, int size) {
         return permissionService.requirePermission("audit:read")
@@ -109,54 +65,24 @@ public class AuditService {
             .map(logs -> logs.stream().map(this::toDto).toList());
     }
 
-    /**
-     * Get recent audit logs.
-     *
-     * @param tenantId Tenant ID
-     * @param limit Number of entries
-     * @return Uni with list of recent audit logs
-     */
     public Uni<List<AuditLogDto>> getRecentAuditLogs(String tenantId, int limit) {
         return permissionService.requirePermission("audit:read")
             .chain(() -> auditLogRepository.findRecent(tenantId, limit))
             .map(logs -> logs.stream().map(this::toDto).toList());
     }
 
-    /**
-     * Get failed operations (HTTP status >= 400).
-     *
-     * @param tenantId Tenant ID
-     * @param page Page number
-     * @param size Page size
-     * @return Uni with list of failed operations
-     */
     public Uni<List<AuditLogDto>> getFailedOperations(String tenantId, int page, int size) {
         return permissionService.requirePermission("audit:read")
             .chain(() -> auditLogRepository.findFailedOperations(tenantId, page, size))
             .map(logs -> logs.stream().map(this::toDto).toList());
     }
 
-    /**
-     * Search audit logs by description.
-     *
-     * @param tenantId Tenant ID
-     * @param searchTerm Search term
-     * @param page Page number
-     * @param size Page size
-     * @return Uni with list of matching audit logs
-     */
     public Uni<List<AuditLogDto>> searchAuditLogs(String tenantId, String searchTerm, int page, int size) {
         return permissionService.requirePermission("audit:read")
             .chain(() -> auditLogRepository.searchByDescription(tenantId, searchTerm, page, size))
             .map(logs -> logs.stream().map(this::toDto).toList());
     }
 
-    /**
-     * Get audit log statistics for tenant.
-     *
-     * @param tenantId Tenant ID
-     * @return Uni with statistics
-     */
     public Uni<AuditStatistics> getAuditStatistics(String tenantId) {
         return permissionService.requirePermission("audit:read")
             .chain(() -> Uni.combine().all()
@@ -179,9 +105,6 @@ public class AuditService {
             );
     }
 
-    /**
-     * Convert AuditLog entity to DTO.
-     */
     private AuditLogDto toDto(AuditLog log) {
         return new AuditLogDto(
             log.getId(),
@@ -204,9 +127,6 @@ public class AuditService {
         );
     }
 
-    /**
-     * Audit statistics DTO.
-     */
     public static class AuditStatistics {
         public final long total;
         public final long creates;

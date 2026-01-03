@@ -55,40 +55,21 @@ public class UserResourcePermission extends PanacheEntityBase {
     @Column(name = "tenant_id", nullable = false, length = 50)
     private String tenantId;
 
-    /**
-     * Resource type: patient, doctor, medical_record, prescription, etc.
-     */
     @Column(name = "resource_type", nullable = false, length = 50)
     private String resourceType;
 
-    /**
-     * Specific resource identifier (e.g., patient UUID, medical record UUID)
-     */
     @Column(name = "resource_id", nullable = false)
     private UUID resourceId;
 
-    /**
-     * Permission granted: read, write, delete, etc.
-     */
     @Column(nullable = false, length = 50)
     private String permission;
 
-    /**
-     * Reason for granting this permission.
-     * Examples: "Assigned doctor", "Break-glass emergency access", "Temporary audit access"
-     */
     @Column(length = 255)
     private String reason;
 
-    /**
-     * Break-glass access: Emergency access that should be audited
-     */
     @Column(name = "is_break_glass")
     private boolean isBreakGlass = false;
 
-    /**
-     * Time-limited access
-     */
     @Column(name = "valid_from")
     private LocalDateTime validFrom;
 
@@ -118,11 +99,6 @@ public class UserResourcePermission extends PanacheEntityBase {
         }
     }
 
-    /**
-     * Check if this permission is currently valid.
-     *
-     * @return true if valid and active
-     */
     public boolean isValid() {
         if (!active || revokedAt != null) {
             return false;
@@ -141,23 +117,12 @@ public class UserResourcePermission extends PanacheEntityBase {
         return true;
     }
 
-    /**
-     * Revoke this permission.
-     *
-     * @param revokedBy User who revoked the permission
-     */
     public void revoke(UUID revokedBy) {
         this.active = false;
         this.revokedAt = LocalDateTime.now();
         this.revokedBy = revokedBy;
     }
 
-    /**
-     * Check if this permission allows a specific action.
-     *
-     * @param action Action to check (read, write, delete, etc.)
-     * @return true if matches
-     */
     public boolean allowsAction(String action) {
         return this.permission.equals(action) || this.permission.equals("manage");
     }

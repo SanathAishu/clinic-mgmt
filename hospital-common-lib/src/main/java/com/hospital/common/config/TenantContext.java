@@ -24,11 +24,6 @@ public class TenantContext {
 
     private static final ThreadLocal<String> CURRENT_TENANT = new ThreadLocal<>();
 
-    /**
-     * Set the current tenant ID for this request/thread.
-     *
-     * @param tenantId The tenant identifier (e.g., "hosp-001")
-     */
     public static void setCurrentTenant(String tenantId) {
         if (tenantId == null || tenantId.isBlank()) {
             Log.warn("Attempting to set null or blank tenant ID");
@@ -38,11 +33,6 @@ public class TenantContext {
         Log.debug("Tenant context set to: " + tenantId);
     }
 
-    /**
-     * Get the current tenant ID for this request/thread.
-     *
-     * @return The tenant identifier, or null if not set
-     */
     public static String getCurrentTenant() {
         String tenantId = CURRENT_TENANT.get();
         if (tenantId == null) {
@@ -51,13 +41,6 @@ public class TenantContext {
         return tenantId;
     }
 
-    /**
-     * Get the current tenant ID, throwing an exception if not set.
-     * Use this when tenant context is required and you want to fail fast.
-     *
-     * @return The tenant identifier
-     * @throws IllegalStateException if tenant context is not set
-     */
     public static String getCurrentTenantOrThrow() {
         String tenantId = CURRENT_TENANT.get();
         if (tenantId == null) {
@@ -79,22 +62,10 @@ public class TenantContext {
         CURRENT_TENANT.remove();
     }
 
-    /**
-     * Check if tenant context is currently set.
-     *
-     * @return true if tenant context is set, false otherwise
-     */
     public static boolean isSet() {
         return CURRENT_TENANT.get() != null;
     }
 
-    /**
-     * Execute a task with a specific tenant context.
-     * The context will be automatically cleared after execution.
-     *
-     * @param tenantId The tenant identifier
-     * @param task     The task to execute
-     */
     public static void executeWithTenant(String tenantId, Runnable task) {
         try {
             setCurrentTenant(tenantId);

@@ -47,16 +47,9 @@ public class Role extends PanacheEntityBase {
     @Column(length = 255)
     private String description;
 
-    /**
-     * Built-in system roles cannot be deleted.
-     * Examples: DOCTOR, NURSE, ADMIN, PATIENT, RECEPTIONIST
-     */
     @Column(name = "is_system_role", nullable = false)
     private boolean isSystemRole = false;
 
-    /**
-     * Active status - inactive roles cannot be assigned to users.
-     */
     @Column(nullable = false)
     private boolean active = true;
 
@@ -95,30 +88,14 @@ public class Role extends PanacheEntityBase {
         updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * Add a permission to this role.
-     *
-     * @param permission Permission to add
-     */
     public void addPermission(Permission permission) {
         this.permissions.add(permission);
     }
 
-    /**
-     * Remove a permission from this role.
-     *
-     * @param permission Permission to remove
-     */
     public void removePermission(Permission permission) {
         this.permissions.remove(permission);
     }
 
-    /**
-     * Check if this role has a specific permission.
-     *
-     * @param permissionName Permission name to check (e.g., "medical_record:read")
-     * @return true if role has the permission
-     */
     public boolean hasPermission(String permissionName) {
         return permissions.stream()
                 .anyMatch(p -> p.getName().equals(permissionName));

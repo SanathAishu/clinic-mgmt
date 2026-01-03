@@ -59,11 +59,6 @@ public class ServiceRouter {
     @ConfigProperty(name = "services.audit-service.url")
     String auditServiceUrl;
 
-    /**
-     * Route request to appropriate backend service.
-     *
-     * @param context Vert.x routing context
-     */
     public void route(RoutingContext context) {
         String path = context.request().path();
         String targetServiceUrl = getTargetServiceUrl(path);
@@ -127,12 +122,6 @@ public class ServiceRouter {
         });
     }
 
-    /**
-     * Get target service URL based on request path.
-     *
-     * @param path Request path
-     * @return Target service URL or null if not found
-     */
     private String getTargetServiceUrl(String path) {
         if (path.startsWith("/api/auth")) {
             return authServiceUrl;
@@ -154,11 +143,6 @@ public class ServiceRouter {
         return null;
     }
 
-    /**
-     * Get service routing map for monitoring/debugging.
-     *
-     * @return Map of path prefix to service URL
-     */
     public Map<String, String> getRoutingMap() {
         return Map.of(
                 "/api/auth", authServiceUrl,

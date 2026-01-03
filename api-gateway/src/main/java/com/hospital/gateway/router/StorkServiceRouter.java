@@ -43,11 +43,6 @@ public class StorkServiceRouter {
     // Stork instance - accessed programmatically to avoid CDI issues
     private final Stork stork = Stork.getInstance();
 
-    /**
-     * Route request to backend service using Stork service discovery.
-     *
-     * @param context Vert.x routing context
-     */
     public void route(RoutingContext context) {
         String path = context.request().path();
         String serviceName = getServiceName(path);
@@ -128,12 +123,6 @@ public class StorkServiceRouter {
         });
     }
 
-    /**
-     * Get Stork service name based on request path.
-     *
-     * @param path Request path
-     * @return Stork service name or null if not found
-     */
     private String getServiceName(String path) {
         if (path.startsWith("/api/auth")) {
             return "auth-service";
@@ -155,11 +144,6 @@ public class StorkServiceRouter {
         return null;
     }
 
-    /**
-     * Get service routing map for monitoring/debugging.
-     *
-     * @return Map of path prefix to Stork service name
-     */
     public Map<String, String> getServiceMap() {
         return Map.of(
                 "/api/auth", "auth-service (via Stork)",

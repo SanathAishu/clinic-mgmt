@@ -88,13 +88,6 @@ public class DataBreachService {
                 });
     }
 
-    /**
-     * Update breach status.
-     *
-     * @param breachId  Breach ID
-     * @param newStatus New status
-     * @return Updated breach
-     */
     public Uni<DataBreachLog> updateBreachStatus(UUID breachId, DataBreachLog.BreachStatus newStatus) {
         return breachRepository.findById(breachId)
                 .onItem().ifNull().failWith(() ->
@@ -110,13 +103,6 @@ public class DataBreachService {
                 );
     }
 
-    /**
-     * Notify Data Protection Board about the breach.
-     *
-     * @param breachId     Breach ID
-     * @param dpbReference Reference number from DPB
-     * @return Updated breach
-     */
     public Uni<DataBreachLog> notifyDataProtectionBoard(UUID breachId, String dpbReference) {
         return breachRepository.findById(breachId)
                 .onItem().ifNull().failWith(() ->
@@ -134,12 +120,6 @@ public class DataBreachService {
                 );
     }
 
-    /**
-     * Notify affected individuals.
-     *
-     * @param breachId Breach ID
-     * @return Updated breach
-     */
     public Uni<DataBreachLog> notifyAffectedIndividuals(UUID breachId) {
         return breachRepository.findById(breachId)
                 .onItem().ifNull().failWith(() ->
@@ -156,13 +136,6 @@ public class DataBreachService {
                 );
     }
 
-    /**
-     * Record containment actions taken.
-     *
-     * @param breachId          Breach ID
-     * @param containmentActions Description of containment actions
-     * @return Updated breach
-     */
     public Uni<DataBreachLog> recordContainmentActions(UUID breachId, String containmentActions) {
         return breachRepository.findById(breachId)
                 .onItem().ifNull().failWith(() ->
@@ -178,13 +151,6 @@ public class DataBreachService {
                 );
     }
 
-    /**
-     * Record remediation steps taken.
-     *
-     * @param breachId          Breach ID
-     * @param remediationSteps Description of remediation
-     * @return Updated breach
-     */
     public Uni<DataBreachLog> recordRemediationSteps(UUID breachId, String remediationSteps) {
         return breachRepository.findById(breachId)
                 .onItem().ifNull().failWith(() ->
@@ -200,12 +166,6 @@ public class DataBreachService {
                 );
     }
 
-    /**
-     * Mark breach as resolved.
-     *
-     * @param breachId Breach ID
-     * @return Updated breach
-     */
     public Uni<DataBreachLog> resolveBreachIncident(UUID breachId) {
         return breachRepository.findById(breachId)
                 .onItem().ifNull().failWith(() ->
@@ -224,44 +184,21 @@ public class DataBreachService {
                 );
     }
 
-    /**
-     * Get breaches requiring DPB notification.
-     *
-     * @return List of breaches needing notification
-     */
     public Uni<List<DataBreachLog>> getBreachesRequiringDpbNotification() {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return breachRepository.findRequiringDpbNotification(tenantId);
     }
 
-    /**
-     * Get overdue DPB notifications.
-     * DPDPA requires notification "without undue delay" - typically within 72 hours.
-     *
-     * @param hoursThreshold Hours after detection (default: 72)
-     * @return List of overdue breaches
-     */
     public Uni<List<DataBreachLog>> getOverdueDpbNotifications(int hoursThreshold) {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return breachRepository.findOverdueDpbNotifications(tenantId, hoursThreshold);
     }
 
-    /**
-     * Get unresolved breaches.
-     *
-     * @return List of unresolved breaches
-     */
     public Uni<List<DataBreachLog>> getUnresolvedBreaches() {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return breachRepository.findUnresolved(tenantId);
     }
 
-    /**
-     * Get breach by incident ID.
-     *
-     * @param incidentId Incident identifier
-     * @return Data breach log
-     */
     public Uni<DataBreachLog> getBreachByIncidentId(String incidentId) {
         return breachRepository.findByIncidentId(incidentId)
                 .onItem().ifNull().failWith(() ->
@@ -269,12 +206,6 @@ public class DataBreachService {
                 );
     }
 
-    /**
-     * Get breach by ID.
-     *
-     * @param breachId Breach ID
-     * @return Data breach log
-     */
     public Uni<DataBreachLog> getBreachById(UUID breachId) {
         return breachRepository.findById(breachId)
                 .onItem().ifNull().failWith(() ->
@@ -282,42 +213,21 @@ public class DataBreachService {
                 );
     }
 
-    /**
-     * Get all breaches for current tenant.
-     *
-     * @return List of breaches
-     */
     public Uni<List<DataBreachLog>> getAllBreaches() {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return breachRepository.findByTenant(tenantId);
     }
 
-    /**
-     * Get breaches by severity.
-     *
-     * @param severity Severity level
-     * @return List of breaches
-     */
     public Uni<List<DataBreachLog>> getBreachesBySeverity(DataBreachLog.BreachSeverity severity) {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return breachRepository.findBySeverity(tenantId, severity);
     }
 
-    /**
-     * Get breach statistics.
-     *
-     * @return Statistics
-     */
     public Uni<DataBreachLogRepository.BreachStatistics> getStatistics() {
         String tenantId = TenantContext.getCurrentTenantOrThrow();
         return breachRepository.getStatistics(tenantId);
     }
 
-    /**
-     * Generate unique incident ID.
-     *
-     * @return Incident ID (format: BR-YYYYMMDD-UUID)
-     */
     private String generateIncidentId() {
         String datePart = LocalDateTime.now().format(
                 java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")

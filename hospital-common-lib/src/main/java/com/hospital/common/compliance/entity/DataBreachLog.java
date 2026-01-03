@@ -45,119 +45,62 @@ public class DataBreachLog extends PanacheEntityBase {
     @Column(name = "tenant_id", nullable = false, length = 50)
     private String tenantId;
 
-    /**
-     * Incident ID for tracking
-     */
     @Column(name = "incident_id", unique = true, length = 50)
     private String incidentId;
 
-    /**
-     * Title/summary of the breach
-     */
     @Column(nullable = false, length = 255)
     private String title;
 
-    /**
-     * Detailed description of the breach
-     */
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    /**
-     * Severity level
-     */
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private BreachSeverity severity;
 
-    /**
-     * Current status
-     */
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private BreachStatus status;
 
-    /**
-     * Type of data affected
-     */
     @Column(name = "data_type_affected", length = 100)
     private String dataTypeAffected;
 
-    /**
-     * Number of individuals affected
-     */
     @Column(name = "individuals_affected")
     private Integer individualsAffected;
 
-    /**
-     * When the breach was detected
-     */
     @Column(name = "detected_at", nullable = false)
     private LocalDateTime detectedAt;
 
-    /**
-     * When the breach occurred (may be before detection)
-     */
     @Column(name = "occurred_at")
     private LocalDateTime occurredAt;
 
-    /**
-     * How the breach was detected
-     */
     @Column(name = "detection_method", length = 255)
     private String detectionMethod;
 
-    /**
-     * Root cause of the breach
-     */
     @Column(name = "root_cause", columnDefinition = "TEXT")
     private String rootCause;
 
-    /**
-     * When Data Protection Board was notified
-     */
     @Column(name = "dpb_notified_at")
     private LocalDateTime dpbNotifiedAt;
 
-    /**
-     * Reference number from DPB notification
-     */
     @Column(name = "dpb_reference", length = 100)
     private String dpbReference;
 
-    /**
-     * When affected individuals were notified
-     */
     @Column(name = "individuals_notified_at")
     private LocalDateTime individualsNotifiedAt;
 
-    /**
-     * Containment actions taken
-     */
     @Column(name = "containment_actions", columnDefinition = "TEXT")
     private String containmentActions;
 
-    /**
-     * Remediation steps taken
-     */
     @Column(name = "remediation_steps", columnDefinition = "TEXT")
     private String remediationSteps;
 
-    /**
-     * When the breach was resolved
-     */
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
-    /**
-     * User who reported the breach
-     */
     @Column(name = "reported_by")
     private UUID reportedBy;
 
-    /**
-     * User responsible for handling the breach
-     */
     @Column(name = "assigned_to")
     private UUID assignedTo;
 
@@ -184,13 +127,6 @@ public class DataBreachLog extends PanacheEntityBase {
         updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * Check if DPB notification is required and overdue.
-     * DPDPA requires notification "without undue delay"
-     *
-     * @param hoursThreshold Hours after detection
-     * @return true if notification is overdue
-     */
     public boolean isDpbNotificationOverdue(int hoursThreshold) {
         if (dpbNotifiedAt != null) {
             return false; // Already notified
@@ -200,9 +136,6 @@ public class DataBreachLog extends PanacheEntityBase {
         return LocalDateTime.now().isAfter(threshold);
     }
 
-    /**
-     * Breach severity levels
-     */
     public enum BreachSeverity {
         CRITICAL,  // Immediate threat - PII/PHI exposed
         HIGH,      // Significant risk
@@ -210,9 +143,6 @@ public class DataBreachLog extends PanacheEntityBase {
         LOW        // Minor incident
     }
 
-    /**
-     * Breach status workflow
-     */
     public enum BreachStatus {
         DETECTED,              // Breach detected, investigation started
         UNDER_INVESTIGATION,   // Actively investigating

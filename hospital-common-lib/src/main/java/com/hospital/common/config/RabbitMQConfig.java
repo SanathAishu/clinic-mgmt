@@ -168,16 +168,10 @@ public final class RabbitMQConfig {
 
     // ==================== Helper Methods ====================
 
-    /**
-     * Get all routing keys for a given exchange type
-     */
     public static String[] getTopicRoutingPatterns(String topic) {
         return new String[]{topic + ".*"};
     }
 
-    /**
-     * Build a routing key pattern for topic exchanges
-     */
     public static String buildTopicPattern(String... parts) {
         return String.join(".", parts) + ".*";
     }

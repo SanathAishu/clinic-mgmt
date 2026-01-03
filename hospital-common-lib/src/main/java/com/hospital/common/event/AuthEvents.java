@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Auth Service Domain Events
- */
 public final class AuthEvents {
 
     private AuthEvents() {

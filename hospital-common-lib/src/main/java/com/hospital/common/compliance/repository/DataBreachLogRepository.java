@@ -16,45 +16,19 @@ import java.util.UUID;
 @ApplicationScoped
 public class DataBreachLogRepository implements PanacheRepositoryBase<DataBreachLog, UUID> {
 
-    /**
-     * Find breach by incident ID.
-     *
-     * @param incidentId Incident identifier
-     * @return Data breach log
-     */
     public Uni<DataBreachLog> findByIncidentId(String incidentId) {
         return find("incidentId", incidentId).firstResult();
     }
 
-    /**
-     * Find all breaches for a tenant.
-     *
-     * @param tenantId Tenant identifier
-     * @return List of breaches
-     */
     public Uni<List<DataBreachLog>> findByTenant(String tenantId) {
         return list("tenantId = ?1 order by detectedAt desc", tenantId);
     }
 
-    /**
-     * Find breaches by severity.
-     *
-     * @param tenantId Tenant identifier
-     * @param severity Severity level
-     * @return List of breaches
-     */
     public Uni<List<DataBreachLog>> findBySeverity(String tenantId, DataBreachLog.BreachSeverity severity) {
         return list("tenantId = ?1 and severity = ?2 order by detectedAt desc",
                 tenantId, severity);
     }
 
-    /**
-     * Find breaches by status.
-     *
-     * @param tenantId Tenant identifier
-     * @param status   Breach status
-     * @return List of breaches
-     */
     public Uni<List<DataBreachLog>> findByStatus(String tenantId, DataBreachLog.BreachStatus status) {
         return list("tenantId = ?1 and status = ?2 order by detectedAt desc",
                 tenantId, status);
@@ -75,13 +49,6 @@ public class DataBreachLogRepository implements PanacheRepositoryBase<DataBreach
                 DataBreachLog.BreachSeverity.HIGH);
     }
 
-    /**
-     * Find overdue DPB notifications.
-     *
-     * @param tenantId       Tenant identifier
-     * @param hoursThreshold Hours after detection
-     * @return List of overdue breaches
-     */
     public Uni<List<DataBreachLog>> findOverdueDpbNotifications(String tenantId, int hoursThreshold) {
         LocalDateTime threshold = LocalDateTime.now().minusHours(hoursThreshold);
         return list("tenantId = ?1 and severity in (?2, ?3) and dpbNotifiedAt is null " +
@@ -92,12 +59,6 @@ public class DataBreachLogRepository implements PanacheRepositoryBase<DataBreach
                 threshold);
     }
 
-    /**
-     * Find unresolved breaches.
-     *
-     * @param tenantId Tenant identifier
-     * @return List of unresolved breaches
-     */
     public Uni<List<DataBreachLog>> findUnresolved(String tenantId) {
         return list("tenantId = ?1 and status not in (?2, ?3) order by detectedAt",
                 tenantId,
@@ -105,12 +66,6 @@ public class DataBreachLogRepository implements PanacheRepositoryBase<DataBreach
                 DataBreachLog.BreachStatus.CLOSED);
     }
 
-    /**
-     * Get breach statistics for a tenant.
-     *
-     * @param tenantId Tenant identifier
-     * @return Statistics
-     */
     public Uni<BreachStatistics> getStatistics(String tenantId) {
         return Uni.combine().all().unis(
                 count("tenantId = ?1", tenantId),
@@ -132,20 +87,11 @@ public class DataBreachLogRepository implements PanacheRepositoryBase<DataBreach
         );
     }
 
-    /**
-     * Stream all breaches for a tenant.
-     *
-     * @param tenantId Tenant identifier
-     * @return Stream of breaches
-     */
     public Multi<DataBreachLog> streamByTenant(String tenantId) {
         return list("tenantId = ?1 order by detectedAt desc", tenantId)
                 .onItem().transformToMulti(list -> Multi.createFrom().iterable(list));
     }
 
-    /**
-     * Breach statistics data class
-     */
     public record BreachStatistics(
             long totalBreaches,
             long criticalBreaches,

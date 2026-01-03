@@ -48,9 +48,6 @@ public class ErrorResponse {
         private Object rejectedValue;
     }
 
-    /**
-     * Builder pattern for complex error responses
-     */
     public static class Builder {
         private int status;
         private String error;

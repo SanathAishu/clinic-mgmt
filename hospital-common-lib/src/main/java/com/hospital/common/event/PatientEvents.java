@@ -8,9 +8,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/**
- * Patient Service Domain Events
- */
 public final class PatientEvents {
 
     private PatientEvents() {

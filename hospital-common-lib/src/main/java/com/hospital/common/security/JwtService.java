@@ -156,14 +156,6 @@ public class JwtService {
         }
     }
 
-    /**
-     * Generate a refresh token with multi-tenancy support.
-     *
-     * @param userId   User's unique identifier
-     * @param email    User's email
-     * @param tenantId Tenant identifier
-     * @return Refresh token as string
-     */
     public String generateRefreshToken(UUID userId, String email, String tenantId) {
         try {
             Instant now = Instant.now();
@@ -244,12 +236,6 @@ public class JwtService {
         }
     }
 
-    /**
-     * Extract Bearer token from Authorization header.
-     *
-     * @param authHeader Authorization header value (e.g., "Bearer <token>")
-     * @return Token string without "Bearer " prefix, or null if invalid
-     */
     public String extractTokenFromHeader(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return null;
@@ -257,20 +243,10 @@ public class JwtService {
         return authHeader.substring("Bearer ".length());
     }
 
-    /**
-     * Get token expiration time in seconds from now.
-     *
-     * @return Token TTL in seconds
-     */
     public long getTokenExpirationSeconds() {
         return tokenExpirationSeconds;
     }
 
-    /**
-     * Set custom token expiration (useful for testing or special cases).
-     *
-     * @param expirationSeconds Time in seconds
-     */
     public void setTokenExpiration(long expirationSeconds) {
         this.tokenExpirationSeconds = expirationSeconds;
     }

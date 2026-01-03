@@ -41,12 +41,6 @@ public class RateLimitFilter {
 
     private ValueCommands<String, Long> redisCommands;
 
-    /**
-     * Check if request should be rate limited.
-     *
-     * @param context Vert.x routing context
-     * @return true if request is allowed, false if rate limited
-     */
     public boolean checkRateLimit(RoutingContext context) {
         if (!rateLimitEnabled) {
             return true; // Rate limiting disabled
@@ -108,10 +102,6 @@ public class RateLimitFilter {
         }
     }
 
-    /**
-     * Refill tokens periodically (called by scheduler).
-     * This runs every minute to add tokens back to buckets.
-     */
     public void refillTokens() {
         // Token refill is handled by Redis TTL (setex)
         // Keys expire after 60 seconds, effectively refilling the bucket

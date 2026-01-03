@@ -44,11 +44,6 @@ public class GatewayRoutes {
     @Inject
     StorkServiceRouter serviceRouter;
 
-    /**
-     * Configure routes on application startup.
-     *
-     * @param event Startup event
-     */
     public void configureRoutes(@Observes StartupEvent event) {
         Log.info("Configuring API Gateway routes...");
 

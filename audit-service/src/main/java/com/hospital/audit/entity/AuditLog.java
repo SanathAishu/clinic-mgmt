@@ -39,87 +39,45 @@ public class AuditLog extends PanacheEntityBase {
     @Column(name = "tenant_id", nullable = false, length = 50, updatable = false)
     private String tenantId;
 
-    /**
-     * User who performed the action.
-     */
     @Column(name = "user_id", updatable = false)
     private UUID userId;
 
-    /**
-     * User's email at the time of action.
-     */
     @Column(name = "user_email", length = 255, updatable = false)
     private String userEmail;
 
-    /**
-     * Action performed (e.g., "CREATE", "UPDATE", "DELETE", "LOGIN", "LOGOUT", "VIEW").
-     */
     @Column(nullable = false, length = 50, updatable = false)
     private String action;
 
-    /**
-     * Resource type (e.g., "USER", "PATIENT", "APPOINTMENT", "MEDICAL_RECORD").
-     */
     @Column(name = "resource_type", nullable = false, length = 100, updatable = false)
     private String resourceType;
 
-    /**
-     * Resource ID (UUID of the affected entity).
-     */
     @Column(name = "resource_id", updatable = false)
     private UUID resourceId;
 
-    /**
-     * Detailed description of the action.
-     */
     @Column(length = 500, updatable = false)
     private String description;
 
-    /**
-     * Old value (before change) - JSON format.
-     */
     @Column(name = "old_value", columnDefinition = "TEXT", updatable = false)
     private String oldValue;
 
-    /**
-     * New value (after change) - JSON format.
-     */
     @Column(name = "new_value", columnDefinition = "TEXT", updatable = false)
     private String newValue;
 
-    /**
-     * IP address of the client.
-     */
     @Column(name = "ip_address", length = 45, updatable = false)
     private String ipAddress;
 
-    /**
-     * User agent string (browser/client info).
-     */
     @Column(name = "user_agent", length = 500, updatable = false)
     private String userAgent;
 
-    /**
-     * Event ID from the source event (for correlation).
-     */
     @Column(name = "event_id", updatable = false)
     private UUID eventId;
 
-    /**
-     * HTTP method (GET, POST, PUT, DELETE, etc.).
-     */
     @Column(name = "http_method", length = 10, updatable = false)
     private String httpMethod;
 
-    /**
-     * Request path (e.g., "/api/patients/123").
-     */
     @Column(name = "request_path", length = 500, updatable = false)
     private String requestPath;
 
-    /**
-     * HTTP status code (200, 201, 400, 401, etc.).
-     */
     @Column(name = "status_code", updatable = false)
     private Integer statusCode;
 
@@ -135,9 +93,6 @@ public class AuditLog extends PanacheEntityBase {
     public AuditLog() {
     }
 
-    /**
-     * Minimal constructor for event-based auditing.
-     */
     public AuditLog(String tenantId, UUID userId, String action, String resourceType, UUID resourceId) {
         this.tenantId = tenantId;
         this.userId = userId;
@@ -146,9 +101,6 @@ public class AuditLog extends PanacheEntityBase {
         this.resourceId = resourceId;
     }
 
-    /**
-     * Full constructor for HTTP request auditing.
-     */
     public AuditLog(String tenantId, UUID userId, String userEmail, String action,
                     String resourceType, UUID resourceId, String description,
                     String oldValue, String newValue, String ipAddress,

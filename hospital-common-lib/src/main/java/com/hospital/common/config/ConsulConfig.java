@@ -56,16 +56,10 @@ public final class ConsulConfig {
 
     // ==================== Service Discovery Endpoints ====================
 
-    /**
-     * Get Consul agent URL
-     */
     public static String getConsulAgentUrl(String host, int port) {
         return String.format("http://%s:%d", host, port);
     }
 
-    /**
-     * Get service discovery URL for a given service
-     */
     public static String getServiceDiscoveryUrl(String serviceName) {
         return String.format("stork://%s", serviceName);
     }

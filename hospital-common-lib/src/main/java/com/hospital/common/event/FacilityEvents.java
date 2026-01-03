@@ -8,9 +8,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/**
- * Facility Service Domain Events (includes Saga pattern events for admission)
- */
 public final class FacilityEvents {
 
     private FacilityEvents() {

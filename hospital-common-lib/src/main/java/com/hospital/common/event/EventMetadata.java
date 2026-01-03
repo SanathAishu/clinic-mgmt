@@ -42,34 +42,20 @@ public class EventMetadata {
     private final LocalDateTime occurredAt;
     private final String eventType;
 
-    /**
-     * Create event metadata with auto-generated ID and current timestamp.
-     *
-     * @param eventType Descriptive event type (e.g., "PatientCreated")
-     */
     public EventMetadata(String eventType) {
         this.eventId = UUID.randomUUID();
         this.occurredAt = LocalDateTime.now();
         this.eventType = eventType;
     }
 
-    /**
-     * Get unique identifier for this event.
-     */
     public UUID getEventId() {
         return eventId;
     }
 
-    /**
-     * Get timestamp when this event was created.
-     */
     public LocalDateTime getOccurredAt() {
         return occurredAt;
     }
 
-    /**
-     * Get descriptive event type.
-     */
     public String getEventType() {
         return eventType;
     }

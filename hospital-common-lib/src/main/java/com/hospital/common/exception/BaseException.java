@@ -2,10 +2,6 @@ package com.hospital.common.exception;
 
 import jakarta.ws.rs.core.Response;
 
-/**
- * Base exception for all application-specific exceptions.
- * Provides HTTP status code mapping for REST responses.
- */
 public abstract class BaseException extends RuntimeException {
 
     private final Response.Status httpStatus;

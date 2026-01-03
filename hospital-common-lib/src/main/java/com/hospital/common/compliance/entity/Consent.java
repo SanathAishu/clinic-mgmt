@@ -50,97 +50,51 @@ public class Consent extends PanacheEntityBase {
     @Column(name = "tenant_id", nullable = false, length = 50)
     private String tenantId;
 
-    /**
-     * Patient who provided the consent
-     */
     @Column(name = "patient_id", nullable = false)
     private UUID patientId;
 
-    /**
-     * Purpose for which consent is given.
-     * Examples: TREATMENT, RESEARCH, MARKETING, DATA_SHARING, EMERGENCY, ANALYTICS
-     */
     @Column(nullable = false, length = 50)
     @Enumerated(EnumType.STRING)
     private ConsentPurpose purpose;
 
-    /**
-     * Detailed description of what the consent covers
-     */
     @Column(length = 1000)
     private String description;
 
-    /**
-     * Current status of the consent
-     */
     @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private ConsentStatus status;
 
-    /**
-     * How the consent was obtained
-     */
     @Column(name = "consent_method", length = 50)
     @Enumerated(EnumType.STRING)
     private ConsentMethod consentMethod;
 
-    /**
-     * IP address from which consent was given (for audit)
-     */
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
-    /**
-     * User agent string (for audit)
-     */
     @Column(name = "user_agent", length = 255)
     private String userAgent;
 
-    /**
-     * When the consent was granted
-     */
     @Column(name = "granted_at", nullable = false)
     private LocalDateTime grantedAt;
 
-    /**
-     * When the consent expires (null = no expiration)
-     */
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
-    /**
-     * When the consent was withdrawn (null = still active)
-     */
     @Column(name = "withdrawn_at")
     private LocalDateTime withdrawnAt;
 
-    /**
-     * Reason for withdrawal
-     */
     @Column(name = "withdrawal_reason", length = 500)
     private String withdrawalReason;
 
-    /**
-     * User who recorded the consent (staff member)
-     */
     @Column(name = "recorded_by")
     private UUID recordedBy;
 
-    /**
-     * Parent consent ID if this is a renewal or modification
-     */
     @Column(name = "parent_consent_id")
     private UUID parentConsentId;
 
-    /**
-     * Version of consent form/agreement
-     */
     @Column(name = "consent_version", length = 20)
     private String consentVersion;
 
-    /**
-     * Notes or additional information
-     */
     @Column(length = 1000)
     private String notes;
 
@@ -167,11 +121,6 @@ public class Consent extends PanacheEntityBase {
         updatedAt = LocalDateTime.now();
     }
 
-    /**
-     * Check if consent is currently valid.
-     *
-     * @return true if consent is active and not expired
-     */
     public boolean isValid() {
         if (status != ConsentStatus.ACTIVE) {
             return false;
@@ -188,30 +137,16 @@ public class Consent extends PanacheEntityBase {
         return true;
     }
 
-    /**
-     * Withdraw this consent.
-     *
-     * @param reason Reason for withdrawal
-     */
     public void withdraw(String reason) {
         this.status = ConsentStatus.WITHDRAWN;
         this.withdrawnAt = LocalDateTime.now();
         this.withdrawalReason = reason;
     }
 
-    /**
-     * Mark consent as expired.
-     */
     public void expire() {
         this.status = ConsentStatus.EXPIRED;
     }
 
-    /**
-     * Check if consent is about to expire (within days threshold).
-     *
-     * @param days Number of days threshold
-     * @return true if expiring soon
-     */
     public boolean isExpiringSoon(int days) {
         if (expiresAt == null) {
             return false;
@@ -221,9 +156,6 @@ public class Consent extends PanacheEntityBase {
         return expiresAt.isBefore(threshold) && expiresAt.isAfter(LocalDateTime.now());
     }
 
-    /**
-     * Consent purpose enumeration
-     */
     public enum ConsentPurpose {
         /**
          * Consent for medical treatment and care
@@ -271,9 +203,6 @@ public class Consent extends PanacheEntityBase {
         COMMUNICATION
     }
 
-    /**
-     * Consent status enumeration
-     */
     public enum ConsentStatus {
         /**
          * Consent is currently active and valid
@@ -306,9 +235,6 @@ public class Consent extends PanacheEntityBase {
         SUPERSEDED
     }
 
-    /**
-     * Consent method enumeration - how consent was obtained
-     */
     public enum ConsentMethod {
         /**
          * Consent obtained via web form

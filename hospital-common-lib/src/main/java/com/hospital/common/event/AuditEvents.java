@@ -7,9 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.UUID;
 
-/**
- * Audit Service Domain Events
- */
 public final class AuditEvents {
 
     private AuditEvents() {

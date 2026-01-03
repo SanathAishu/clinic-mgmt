@@ -75,12 +75,6 @@ public class BackendServicesHealthCheck implements HealthCheck {
         }
     }
 
-    /**
-     * Check if a service is reachable.
-     *
-     * @param healthUrl Health check URL
-     * @return true if service is UP
-     */
     private boolean checkService(String healthUrl) {
         try {
             CompletableFuture<Boolean> future = new CompletableFuture<>();

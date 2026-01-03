@@ -2,9 +2,6 @@ package com.hospital.common.exception;
 
 import jakarta.ws.rs.core.Response;
 
-/**
- * Exception thrown when a requested resource is not found.
- */
 public class NotFoundException extends BaseException {
 
     public NotFoundException(String message) {

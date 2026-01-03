@@ -302,9 +302,6 @@ public class AuditController {
         return Response.ok(new HealthResponse("UP", "audit-service")).build();
     }
 
-    /**
-     * Error response DTO.
-     */
     public static class ErrorResponse {
         public String error;
 
@@ -313,9 +310,6 @@ public class AuditController {
         }
     }
 
-    /**
-     * Health response DTO.
-     */
     public static class HealthResponse {
         public String status;
         public String service;

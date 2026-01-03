@@ -17,15 +17,6 @@ import java.util.UUID;
 @ApplicationScoped
 public class UserResourcePermissionRepository implements PanacheRepositoryBase<UserResourcePermission, UUID> {
 
-    /**
-     * Find all permissions for a user on a specific resource.
-     *
-     * @param userId       User ID
-     * @param tenantId     Tenant identifier
-     * @param resourceType Resource type
-     * @param resourceId   Resource ID
-     * @return List of permissions
-     */
     public Uni<List<UserResourcePermission>> findByUserAndResource(
             UUID userId, String tenantId, String resourceType, UUID resourceId) {
         return list("userId = ?1 and tenantId = ?2 and resourceType = ?3 and resourceId = ?4 and active = true",
@@ -186,13 +177,6 @@ public class UserResourcePermissionRepository implements PanacheRepositoryBase<U
         return persist(urp);
     }
 
-    /**
-     * Revoke a specific permission.
-     *
-     * @param permissionId Permission ID
-     * @param revokedBy    User who revoked
-     * @return Updated permission
-     */
     public Uni<UserResourcePermission> revokePermission(UUID permissionId, UUID revokedBy) {
         return findById(permissionId)
                 .chain(permission -> {
@@ -222,23 +206,10 @@ public class UserResourcePermissionRepository implements PanacheRepositoryBase<U
                 now, revokedBy, userId, tenantId, resourceType, resourceId);
     }
 
-    /**
-     * Find all break-glass accesses for audit purposes.
-     *
-     * @param tenantId Tenant identifier
-     * @return List of break-glass permissions
-     */
     public Uni<List<UserResourcePermission>> findBreakGlassAccesses(String tenantId) {
         return list("tenantId = ?1 and isBreakGlass = true order by grantedAt desc", tenantId);
     }
 
-    /**
-     * Stream all permissions for a user.
-     *
-     * @param userId   User ID
-     * @param tenantId Tenant identifier
-     * @return Stream of permissions
-     */
     public Multi<UserResourcePermission> streamByUser(UUID userId, String tenantId) {
         // In reactive Panache, convert list to Multi
         return list("userId = ?1 and tenantId = ?2 and active = true and revokedAt is null",
@@ -246,11 +217,6 @@ public class UserResourcePermissionRepository implements PanacheRepositoryBase<U
                 .onItem().transformToMulti(list -> Multi.createFrom().iterable(list));
     }
 
-    /**
-     * Cleanup expired permissions.
-     *
-     * @return Number of cleaned up permissions
-     */
     public Uni<Integer> cleanupExpired() {
         LocalDateTime now = LocalDateTime.now();
         return update("active = false where validUntil < ?1 and active = true", now);
