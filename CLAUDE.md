@@ -21,6 +21,52 @@ When running terminal commands, **ALWAYS use Rust-based alternatives**:
 
 ---
 
+## Local Development - Start/Stop Services
+
+Use these scripts to manage all services (infrastructure + microservices) at once:
+
+### Start All Services
+```bash
+./start-local.sh
+```
+
+This starts in order:
+1. **Infrastructure** (Docker): PostgreSQL, Redis, RabbitMQ, Consul
+2. **Monitoring** (Docker): Prometheus, Grafana
+3. **Microservices** (Gradle): auth-service, audit-service, api-gateway
+
+### Stop All Services
+```bash
+./stop-local.sh
+```
+
+This stops:
+1. All Quarkus microservices (graceful shutdown)
+2. All Docker containers
+
+### Service Ports Reference
+
+| Service | Port | URL |
+|---------|------|-----|
+| API Gateway | 8080 | http://localhost:8080 |
+| Auth Service | 8081 | http://localhost:8081 |
+| Audit Service | 8088 | http://localhost:8088 |
+| PostgreSQL | 5432 | - |
+| Redis | 6379 | - |
+| RabbitMQ | 5672 | Management: http://localhost:15672 |
+| Consul | 8500 | http://localhost:8500 |
+| Prometheus | 9090 | http://localhost:9090 |
+| Grafana | 3000 | http://localhost:3000 (admin/admin) |
+
+### View Logs
+```bash
+tail -f /tmp/auth-service.log
+tail -f /tmp/audit-service.log
+tail -f /tmp/api-gateway.log
+```
+
+---
+
 ## Git Commit Guidelines
 
 Do **NOT** add AI attribution to commit messages:
