@@ -1,6 +1,6 @@
 # Hospital Management System - Project Status
 
-**Last Updated:** January 3, 2026
+**Last Updated:** January 4, 2026
 **Current Phase:** Phase 1 - Auth & Audit Services Operational
 **Status:** ✅ Development Environment Functional
 
@@ -78,6 +78,56 @@ curl -X GET http://localhost:8088/api/audit/logs/recent?limit=5 \
 docker ps
 # Shows: hospital-postgres, hospital-rabbitmq, hospital-redis, hospital-consul
 ```
+
+---
+
+## Recent Accomplishments (Jan 4, 2026)
+
+### 1. Java Unit Tests Added ✅
+**Change:** Implemented unit tests using Quarkus Test + Mockito
+
+**Auth Service Tests:**
+- `UserTest.java` - Entity business logic (locking, login validation, password management)
+- `AuthServiceTest.java` - Service layer with mocked repository
+
+**Audit Service Tests:**
+- `AuditLogTest.java` - Entity constructor and setter tests
+- `AuditServiceTest.java` - Service layer with mocked dependencies (pagination, filtering, search, statistics)
+
+**Dependencies Added:**
+```kotlin
+testImplementation("io.quarkus:quarkus-junit5")
+testImplementation("io.quarkus:quarkus-junit5-mockito")
+testImplementation("io.rest-assured:rest-assured")
+testImplementation("org.assertj:assertj-core:3.25.1")
+```
+
+### 2. API Gateway Request Body Bug Fixed ✅
+**Issue:** `java.lang.IllegalStateException: Request has already been read` when forwarding requests
+
+**Root Cause:** BodyHandler consumes the request body; subsequent reads via `context.request().body()` fail
+
+**Fix:** Changed `ServiceRouter` to use `context.body().buffer()` instead of `context.request().body()`
+
+**Also Added:** Hop-by-hop header filtering to prevent forwarding `Host`, `Content-Length`, etc.
+
+### 3. Python API Tests Removed ✅
+**Decision:** Unit tests in Java alongside services are more productive than external Python tests
+
+**Removed:** `api-tests/` directory (Python pytest framework)
+
+**Rationale:**
+- Co-located tests with service code
+- Single build system (Gradle)
+- Better IDE integration
+- Simpler CI/CD pipeline
+
+### 4. AI Documentation Updated ✅
+**Created:**
+- `.ai/README.md` - AI assistant documentation overview
+- `.ai/TESTING.md` - Testing strategy and patterns
+- `.ai/ARCHITECTURE.md` - System architecture overview
+- `.ai/CONVENTIONS.md` - Coding conventions
 
 ---
 
@@ -324,10 +374,38 @@ See [TROUBLESHOOTING.md](TROUBLESHOOTING.md#issue-row-level-security-rls-blockin
 
 ## Testing Status
 
+**Testing Framework:** Java + Quarkus Test + Mockito + AssertJ
+
 ### Unit Tests
-- [ ] Auth Service - pending
-- [ ] Audit Service - pending
+- [x] Auth Service - UserTest, AuthServiceTest
+- [x] Audit Service - AuditLogTest, AuditServiceTest
 - [ ] Hospital Common Lib - pending
+- [ ] API Gateway - pending
+
+### Test Locations
+```
+auth-service/src/test/java/com/hospital/auth/
+├── entity/UserTest.java           # User entity unit tests
+├── service/AuthServiceTest.java   # AuthService unit tests (mocked)
+└── controller/AuthControllerTest.java  # Integration tests
+
+audit-service/src/test/java/com/hospital/audit/
+├── entity/AuditLogTest.java       # AuditLog entity unit tests
+└── service/AuditServiceTest.java  # AuditService unit tests (mocked)
+```
+
+### Running Tests
+```bash
+# All tests for a service
+./gradlew :auth-service:test
+./gradlew :audit-service:test
+
+# Specific test class
+./gradlew :auth-service:test --tests "*UserTest*"
+
+# All tests
+./gradlew test
+```
 
 ### Integration Tests
 - [x] User registration end-to-end
