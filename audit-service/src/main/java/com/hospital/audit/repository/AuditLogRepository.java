@@ -1,69 +1,111 @@
 package com.hospital.audit.repository;
 
-import com.hospital.audit.entity.AuditAction;
-import com.hospital.audit.entity.AuditCategory;
 import com.hospital.audit.entity.AuditLog;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
+import io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase;
+import io.quarkus.panache.common.Page;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Repository
-public interface AuditLogRepository extends JpaRepository<AuditLog, UUID>, JpaSpecificationExecutor<AuditLog> {
+/**
+ * Reactive repository for AuditLog entity.
+ *
+ * Audit Log Rules:
+ * - Immutable: No updates or deletes allowed
+ * - Append-only: Only persist() operations
+ */
+@ApplicationScoped
+public class AuditLogRepository implements PanacheRepositoryBase<AuditLog, UUID> {
 
-    Page<AuditLog> findByCategory(AuditCategory category, Pageable pageable);
+    /**
+     * Find audit logs by tenant with pagination.
+     */
+    public Uni<List<AuditLog>> findByTenantPaginated(String tenantId, int page, int size) {
+        return find("tenantId = ?1 ORDER BY timestamp DESC", tenantId)
+            .page(Page.of(page, size))
+            .list();
+    }
 
-    Page<AuditLog> findByAction(AuditAction action, Pageable pageable);
+    /**
+     * Find audit logs by user.
+     */
+    public Uni<List<AuditLog>> findByUser(String tenantId, UUID userId, int page, int size) {
+        return find("tenantId = ?1 AND userId = ?2 ORDER BY timestamp DESC", tenantId, userId)
+            .page(Page.of(page, size))
+            .list();
+    }
 
-    Page<AuditLog> findByUserId(UUID userId, Pageable pageable);
+    /**
+     * Find audit logs by resource (return as list for now).
+     */
+    public Uni<List<AuditLog>> findByResource(String tenantId, String resourceType, UUID resourceId) {
+        return find("tenantId = ?1 AND resourceType = ?2 AND resourceId = ?3 ORDER BY timestamp DESC",
+            tenantId, resourceType, resourceId).list();
+    }
 
-    Page<AuditLog> findByEntityId(String entityId, Pageable pageable);
+    /**
+     * Find audit logs by action type.
+     */
+    public Uni<List<AuditLog>> findByAction(String tenantId, String action, int page, int size) {
+        return find("tenantId = ?1 AND action = ?2 ORDER BY timestamp DESC", tenantId, action)
+            .page(Page.of(page, size))
+            .list();
+    }
 
-    Page<AuditLog> findByServiceName(String serviceName, Pageable pageable);
+    /**
+     * Find audit logs within date range.
+     */
+    public Uni<List<AuditLog>> findByDateRange(String tenantId, LocalDateTime startDate,
+                                                 LocalDateTime endDate, int page, int size) {
+        return find("tenantId = ?1 AND timestamp >= ?2 AND timestamp <= ?3 ORDER BY timestamp DESC",
+            tenantId, startDate, endDate)
+            .page(Page.of(page, size))
+            .list();
+    }
 
-    @Query("SELECT a FROM AuditLog a WHERE a.timestamp BETWEEN :startDate AND :endDate ORDER BY a.timestamp DESC")
-    Page<AuditLog> findByDateRange(
-        @Param("startDate") LocalDateTime startDate,
-        @Param("endDate") LocalDateTime endDate,
-        Pageable pageable
-    );
+    /**
+     * Find recent audit logs (limited).
+     */
+    public Uni<List<AuditLog>> findRecent(String tenantId, int limit) {
+        return find("tenantId = ?1 ORDER BY timestamp DESC", tenantId)
+            .page(Page.ofSize(limit))
+            .list();
+    }
 
-    @Query("SELECT a FROM AuditLog a WHERE a.category = :category AND a.action = :action ORDER BY a.timestamp DESC")
-    Page<AuditLog> findByCategoryAndAction(
-        @Param("category") AuditCategory category,
-        @Param("action") AuditAction action,
-        Pageable pageable
-    );
+    /**
+     * Find failed operations (HTTP status >= 400).
+     */
+    public Uni<List<AuditLog>> findFailedOperations(String tenantId, int page, int size) {
+        return find("tenantId = ?1 AND statusCode >= 400 ORDER BY timestamp DESC", tenantId)
+            .page(Page.of(page, size))
+            .list();
+    }
 
-    @Query("SELECT a FROM AuditLog a WHERE a.entityType = :entityType AND a.entityId = :entityId ORDER BY a.timestamp DESC")
-    List<AuditLog> findEntityHistory(
-        @Param("entityType") String entityType,
-        @Param("entityId") String entityId
-    );
+    /**
+     * Search audit logs by description (case-insensitive).
+     */
+    public Uni<List<AuditLog>> searchByDescription(String tenantId, String searchTerm, int page, int size) {
+        return find("tenantId = ?1 AND LOWER(description) LIKE LOWER(?2) ORDER BY timestamp DESC",
+            tenantId, "%" + searchTerm + "%")
+            .page(Page.of(page, size))
+            .list();
+    }
 
-    @Query("SELECT a FROM AuditLog a WHERE a.userId = :userId AND a.timestamp BETWEEN :startDate AND :endDate ORDER BY a.timestamp DESC")
-    Page<AuditLog> findUserActivityInRange(
-        @Param("userId") UUID userId,
-        @Param("startDate") LocalDateTime startDate,
-        @Param("endDate") LocalDateTime endDate,
-        Pageable pageable
-    );
+    /**
+     * Count audit logs by tenant.
+     */
+    public Uni<Long> countByTenant(String tenantId) {
+        return count("tenantId = ?1", tenantId);
+    }
 
-    @Query("SELECT a.category, COUNT(a) FROM AuditLog a WHERE a.timestamp >= :since GROUP BY a.category")
-    List<Object[]> countByCategory(@Param("since") LocalDateTime since);
-
-    @Query("SELECT a.action, COUNT(a) FROM AuditLog a WHERE a.timestamp >= :since GROUP BY a.action")
-    List<Object[]> countByAction(@Param("since") LocalDateTime since);
-
-    @Query("SELECT a.serviceName, COUNT(a) FROM AuditLog a WHERE a.timestamp >= :since GROUP BY a.serviceName")
-    List<Object[]> countByService(@Param("since") LocalDateTime since);
-
-    long countBySuccess(Boolean success);
+    /**
+     * Count audit logs by action type.
+     */
+    public Uni<Long> countByAction(String tenantId, String action) {
+        return count("tenantId = ?1 AND action = ?2", tenantId, action);
+    }
 }

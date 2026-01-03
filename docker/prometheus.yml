@@ -1,0 +1,76 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # API Gateway
+  - job_name: 'api-gateway'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+        labels:
+          service: 'api-gateway'
+
+  # Auth Service
+  - job_name: 'auth-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8081']
+        labels:
+          service: 'auth-service'
+
+  # Patient Service
+  - job_name: 'patient-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8082']
+        labels:
+          service: 'patient-service'
+
+  # Doctor Service
+  - job_name: 'doctor-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8083']
+        labels:
+          service: 'doctor-service'
+
+  # Appointment Service
+  - job_name: 'appointment-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8084']
+        labels:
+          service: 'appointment-service'
+
+  # Medical Records Service
+  - job_name: 'medical-records-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8085']
+        labels:
+          service: 'medical-records-service'
+
+  # Facility Service
+  - job_name: 'facility-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8086']
+        labels:
+          service: 'facility-service'
+
+  # Notification Service
+  - job_name: 'notification-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8087']
+        labels:
+          service: 'notification-service'
+
+  # Audit Service
+  - job_name: 'audit-service'
+    metrics_path: '/q/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8088']
+        labels:
+          service: 'audit-service'

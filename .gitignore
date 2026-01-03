@@ -1,123 +1,56 @@
-# Compiled class files
-*.class
-
-# Log files
-*.log
-logs/
-
-# Package files
-*.jar
-*.war
-*.nar
-*.ear
-*.zip
-*.tar.gz
-*.rar
-
-# Maven
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
-dependency-reduced-pom.xml
-buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
-
 # Gradle
 .gradle/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
-# IDE - IntelliJ IDEA
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
 .idea/
-*.iws
 *.iml
 *.ipr
-out/
-
-# IDE - Eclipse
-.apt_generated
-.classpath
-.factorypath
+*.iws
 .project
-.settings
-.springBeans
-.sts4-cache
-bin/
-
-# IDE - NetBeans
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-
-# IDE - VS Code
+.classpath
+.settings/
+.factorypath
 .vscode/
+
+# Compiled files
+*.class
+*.jar
+*.war
+*.ear
+
+# Log files
+*.log
+logs/
 
 # OS files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Spring Boot
-spring-shell.log
-
-# Application properties with secrets
-application-local.yml
-application-local.properties
-application-prod.yml
-application-prod.properties
-*-secret.yml
-*-secret.properties
-
-# JWT Keys (DO NOT COMMIT)
-*.pem
-*.key
-*.pub
-auth-service/src/main/resources/keys/
-
-# Environment files
+# Environment
 .env
 .env.local
-.env.*.local
+*.pem
+!**/src/main/resources/*.pem
 
-# Docker
-docker-compose.override.yml
+# Test outputs
+test-output/
+surefire-reports/
 
-# Test output
-/test-output/
-/surefire-reports/
+# Native image
+*-runner
+*-runner.jar
 
-# JaCoCo coverage
-jacoco.exec
-*.exec
-
-# Checkstyle
-checkstyle-result.xml
-checkstyle-cachefile
-
-# PMD
-pmd.xml
-
-# Node (if frontend exists)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Quarkus
+.quarkus/
 
 # Temporary files
 *.tmp
 *.temp
 *.swp
 *~
-
-# Crash reports
-hs_err_pid*

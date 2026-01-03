@@ -1,101 +1,183 @@
 package com.hospital.auth.controller;
 
-import com.hospital.auth.dto.AuthResponse;
 import com.hospital.auth.dto.LoginRequest;
+import com.hospital.auth.dto.LoginResponse;
 import com.hospital.auth.dto.RegisterRequest;
 import com.hospital.auth.dto.UserDto;
 import com.hospital.auth.service.AuthService;
-import com.hospital.auth.util.JwtUtils;
-import com.hospital.common.dto.ApiResponse;
+import io.quarkus.logging.Log;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.UUID;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
- * Authentication controller with registration, login, and public key endpoints
+ * Authentication REST controller.
+ *
+ * Public Endpoints (no JWT required):
+ * - POST /api/auth/login - User login
+ * - POST /api/auth/register - User registration
+ *
+ * Multi-Tenancy:
+ * - tenantId extracted from X-Tenant-Id header (set by API Gateway)
+ * - For direct testing, uses default tenant if header missing
+ *
+ * Security:
+ * - Login rate-limited by API Gateway
+ * - Registration may require invitation code (future)
+ * - Passwords validated via Bean Validation
  */
-@Slf4j
-@RestController
-@RequestMapping("/api/auth")
-@RequiredArgsConstructor
+@Path("/api/auth")
+@ApplicationScoped
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class AuthController {
 
-    private final AuthService authService;
-    private final JwtUtils jwtUtils;
+    @Inject
+    AuthService authService;
+
+    @ConfigProperty(name = "tenant.default-tenant-id", defaultValue = "default-tenant")
+    String defaultTenantId;
 
     /**
-     * Register a new user (patient or doctor)
+     * User login endpoint.
+     *
+     * Request:
+     * {
+     *   "email": "user@hospital.com",
+     *   "password": "SecurePass123!"
+     * }
+     *
+     * Response:
+     * {
+     *   "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+     *   "tokenType": "Bearer",
+     *   "expiresIn": 86400,
+     *   "user": {
+     *     "id": "uuid",
+     *     "name": "John Doe",
+     *     "email": "user@hospital.com",
+     *     "roles": ["DOCTOR"],
+     *     "permissions": ["patient:read", "appointment:create"]
+     *   }
+     * }
+     *
+     * @param tenantId Tenant ID from header (or default)
+     * @param request Login credentials
+     * @return Login response with JWT token
      */
-    @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("Registration request for email: {}", request.getEmail());
+    @POST
+    @Path("/login")
+    public Uni<Response> login(
+        @HeaderParam("X-Tenant-Id") String tenantId,
+        @Valid LoginRequest request
+    ) {
+        // Use default tenant if header not provided (for testing)
+        String resolvedTenantId = (tenantId != null && !tenantId.isBlank())
+            ? tenantId
+            : defaultTenantId;
 
-        AuthResponse response = authService.register(request);
+        Log.infof("Login attempt for email: %s, tenant: %s", request.getEmail(), resolvedTenantId);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("User registered successfully", response));
+        return authService.login(resolvedTenantId, request)
+            .map(loginResponse -> Response.ok(loginResponse).build())
+            .onFailure().recoverWithItem(error -> {
+                Log.errorf(error, "Login failed for email: %s", request.getEmail());
+                return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity(new ErrorResponse(error.getMessage()))
+                    .build();
+            });
     }
 
     /**
-     * Login endpoint
+     * User registration endpoint.
+     *
+     * Request:
+     * {
+     *   "name": "John Doe",
+     *   "email": "john@hospital.com",
+     *   "password": "SecurePass123!",
+     *   "phone": "+1234567890"
+     * }
+     *
+     * Response:
+     * {
+     *   "id": "uuid",
+     *   "name": "John Doe",
+     *   "email": "john@hospital.com",
+     *   "active": true,
+     *   "emailVerified": false
+     * }
+     *
+     * @param tenantId Tenant ID from header (or default)
+     * @param request Registration data
+     * @return Created user DTO
      */
-    @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Login request for email: {}", request.getEmail());
+    @POST
+    @Path("/register")
+    public Uni<Response> register(
+        @HeaderParam("X-Tenant-Id") String tenantId,
+        @Valid RegisterRequest request
+    ) {
+        // Use default tenant if header not provided (for testing)
+        String resolvedTenantId = (tenantId != null && !tenantId.isBlank())
+            ? tenantId
+            : defaultTenantId;
 
-        AuthResponse response = authService.login(request);
+        Log.infof("Registration attempt for email: %s, tenant: %s", request.getEmail(), resolvedTenantId);
 
-        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+        return authService.register(resolvedTenantId, request)
+            .map(userDto -> Response.status(Response.Status.CREATED).entity(userDto).build())
+            .onFailure().recoverWithItem(error -> {
+                Log.errorf(error, "Registration failed for email: %s", request.getEmail());
+
+                // Determine appropriate HTTP status
+                int status = error instanceof com.hospital.common.exception.ForbiddenException
+                    ? Response.Status.CONFLICT.getStatusCode()
+                    : Response.Status.BAD_REQUEST.getStatusCode();
+
+                return Response.status(status)
+                    .entity(new ErrorResponse(error.getMessage()))
+                    .build();
+            });
     }
 
     /**
-     * Validate token endpoint (for internal service calls)
+     * Health check endpoint for auth service.
+     *
+     * @return OK status
      */
-    @GetMapping("/validate")
-    public ResponseEntity<ApiResponse<Boolean>> validateToken(@RequestHeader("Authorization") String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.ok(ApiResponse.success(false));
+    @GET
+    @Path("/health")
+    public Response health() {
+        return Response.ok(new HealthResponse("UP", "auth-service")).build();
+    }
+
+    /**
+     * Error response DTO.
+     */
+    public static class ErrorResponse {
+        public String error;
+
+        public ErrorResponse(String error) {
+            this.error = error;
         }
-        String token = authHeader.substring(7);
-        boolean isValid = jwtUtils.validateToken(token);
-        return ResponseEntity.ok(ApiResponse.success(isValid));
     }
 
     /**
-     * Get user by ID (authenticated endpoint)
+     * Health response DTO.
      */
-    @GetMapping("/users/{userId}")
-    public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable UUID userId) {
-        log.info("Fetching user with ID: {}", userId);
+    public static class HealthResponse {
+        public String status;
+        public String service;
 
-        UserDto user = authService.getUserById(userId);
-
-        return ResponseEntity.ok(ApiResponse.success(user));
-    }
-
-    /**
-     * Get user by email (authenticated endpoint)
-     */
-    @GetMapping("/users/email/{email}")
-    public ResponseEntity<ApiResponse<UserDto>> getUserByEmail(@PathVariable String email) {
-        log.info("Fetching user with email: {}", email);
-
-        UserDto user = authService.getUserByEmail(email);
-
-        return ResponseEntity.ok(ApiResponse.success(user));
-    }
-
-    /**
-     * Health check endpoint
-     */
-    @GetMapping("/health")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("Auth Service is running");
+        public HealthResponse(String status, String service) {
+            this.status = status;
+            this.service = service;
+        }
     }
 }
