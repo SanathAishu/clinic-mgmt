@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
  * Used by all services that need to validate JWT tokens
  */
 @Slf4j
-@Component
+@Component("commonJwtUtils")
 public class JwtUtils {
 
     @Value("${jwt.secret:HospitalManagementSystemSecretKeyForHS512Algorithm2024SecureTokenGeneration}")

@@ -1,6 +1,9 @@
 package com.hospital.audit.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -8,7 +11,6 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
 @Table(name = "audit_logs", indexes = {
     @Index(name = "idx_audit_category", columnList = "category"),
     @Index(name = "idx_audit_action", columnList = "action"),
@@ -17,7 +19,6 @@ import java.util.UUID;
     @Index(name = "idx_audit_timestamp", columnList = "timestamp"),
     @Index(name = "idx_audit_service", columnList = "service_name")
 })
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,66 +27,63 @@ import java.util.UUID;
 public class AuditLog {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     private AuditCategory category;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column
     private AuditAction action;
 
-    @Column(name = "service_name", nullable = false)
+    @Column
     private String serviceName;
 
-    @Column(name = "entity_type")
+    @Column
     private String entityType;
 
-    @Column(name = "entity_id")
+    @Column
     private String entityId;
 
-    @Column(name = "user_id")
+    @Column
     private UUID userId;
 
-    @Column(name = "user_email")
+    @Column
     private String userEmail;
 
-    @Column(name = "user_role")
+    @Column
     private String userRole;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String description;
 
-    @Column(name = "old_value", columnDefinition = "TEXT")
+    @Column
     private String oldValue;
 
-    @Column(name = "new_value", columnDefinition = "TEXT")
+    @Column
     private String newValue;
 
-    @Column(name = "ip_address")
+    @Column
     private String ipAddress;
 
-    @Column(name = "user_agent")
+    @Column
     private String userAgent;
 
-    @Column(name = "request_id")
+    @Column
     private String requestId;
 
-    @Column(name = "correlation_id")
+    @Column
     private String correlationId;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String metadata;
 
-    @Column(nullable = false)
+    @Column
     private Boolean success;
 
-    @Column(name = "error_message", columnDefinition = "TEXT")
+    @Column
     private String errorMessage;
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
+    @Column
     private LocalDateTime timestamp;
 }

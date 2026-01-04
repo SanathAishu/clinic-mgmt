@@ -1,6 +1,9 @@
 package com.hospital.medicalrecords.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -10,9 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
 @Table(name = "medical_records")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,28 +22,27 @@ import java.util.UUID;
 public class MedicalRecord {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column
     private UUID patientId;
 
-    @Column(nullable = false)
+    @Column
     private UUID doctorId;
 
-    @Column(nullable = false)
+    @Column
     private LocalDate recordDate;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String diagnosis;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String symptoms;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String treatment;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String notes;
 
     private String bloodPressure;
@@ -61,11 +61,11 @@ public class MedicalRecord {
     @OneToOne(mappedBy = "medicalRecord", cascade = CascadeType.ALL, orphanRemoval = true)
     private MedicalReport medicalReport;
 
-    @Column(nullable = false)
+    @Column
     private Boolean active = true;
 
     @CreatedDate
-    @Column(updatable = false)
+    @Column
     private LocalDateTime createdAt;
 
     @LastModifiedDate

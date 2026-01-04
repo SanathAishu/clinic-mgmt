@@ -1,8 +1,12 @@
 package com.hospital.auth.entity;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import com.hospital.common.enums.Gender;
 import com.hospital.common.enums.Role;
-import jakarta.persistence.*;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,9 +21,7 @@ import java.util.UUID;
 /**
  * User entity with UUID primary key for authentication
  */
-@Entity
 @Table(name = "users")
-@EntityListeners(AuditingEntityListener.class)
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,41 +29,38 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column
     private String email;
 
-    @Column(nullable = false)
+    @Column
     private String password;  // BCrypt hashed
 
-    @Column(nullable = false, length = 100)
+    @Column
     private String name;
 
-    @Column(length = 20)
+    @Column
     private String phone;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Column
     private Gender gender;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column
     private Role role;
 
-    @Column(nullable = false)
+    @Column
     @Builder.Default
     private Boolean active = true;
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
+    @Column
     private LocalDateTime createdAt;
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
     // Metadata stored as JSONB in PostgreSQL
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String metadata;
 }

@@ -31,12 +31,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- Spring AMQP (for RabbitMQ events) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
-
         <!-- Spring Data Redis (for caching) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

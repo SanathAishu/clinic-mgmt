@@ -2,26 +2,25 @@ package com.hospital.patient.entity;
 
 import com.hospital.common.enums.Disease;
 import com.hospital.common.enums.Gender;
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Patient entity with UUID primary key
- * No cascade relationships - managed via events
+ * Patient entity with UUID primary key using R2DBC
+ * No cascade relationships - managed via REST APIs
  */
-@Entity
 @Table(name = "patients")
-@EntityListeners(AuditingEntityListener.class)
 @Data
 @Builder
 @NoArgsConstructor
@@ -29,61 +28,55 @@ import java.util.UUID;
 public class Patient {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column
     private UUID userId;  // Reference to User in Auth Service
 
-    @Column(nullable = false, length = 100)
+    @Column
     private String name;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column
     private String email;
 
-    @Column(length = 20)
+    @Column
     private String phone;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 10)
+    @Column
     private Gender gender;
 
-    @Column(nullable = false)
+    @Column
     private LocalDate dateOfBirth;
 
-    @Column(length = 500)
+    @Column
     private String address;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 50)
+    @Column
     private Disease disease;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String medicalHistory;
 
-    @Column(length = 100)
+    @Column
     private String emergencyContact;
 
-    @Column(length = 20)
+    @Column
     private String emergencyPhone;
 
-    @Column(nullable = false)
     @Builder.Default
     private Boolean active = true;
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
     // JSONB metadata for flexible storage
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String metadata;
 
     // Calculate age from date of birth
-    @Transient
     public int getAge() {
         if (dateOfBirth == null) {
             return 0;

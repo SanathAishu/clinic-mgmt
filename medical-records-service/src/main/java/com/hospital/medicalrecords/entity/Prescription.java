@@ -1,6 +1,9 @@
 package com.hospital.medicalrecords.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -10,9 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Entity
 @Table(name = "prescriptions")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -21,42 +22,41 @@ import java.util.UUID;
 public class Prescription {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "medical_record_id", nullable = false)
     private MedicalRecord medicalRecord;
 
-    @Column(nullable = false)
+    @Column
     private UUID patientId;
 
-    @Column(nullable = false)
+    @Column
     private UUID doctorId;
 
-    @Column(nullable = false)
+    @Column
     private LocalDate prescriptionDate;
 
-    @Column(columnDefinition = "TEXT", nullable = false)
+    @Column
     private String medications;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String dosageInstructions;
 
     private Integer durationDays;
 
-    @Column(columnDefinition = "TEXT")
+    @Column
     private String specialInstructions;
 
     private Boolean refillable = false;
 
     private Integer refillsRemaining = 0;
 
-    @Column(nullable = false)
+    @Column
     private Boolean active = true;
 
     @CreatedDate
-    @Column(updatable = false)
+    @Column
     private LocalDateTime createdAt;
 
     @LastModifiedDate

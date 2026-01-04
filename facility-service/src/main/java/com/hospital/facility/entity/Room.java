@@ -1,6 +1,9 @@
 package com.hospital.facility.entity;
 
-import jakarta.persistence.*;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
+
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -12,9 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Entity
 @Table(name = "rooms")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,23 +24,21 @@ import java.util.UUID;
 public class Room {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column
     private String roomNumber;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
+    @Column
     private RoomType roomType;
 
-    @Column(nullable = false)
+    @Column
     private Integer capacity;
 
-    @Column(nullable = false)
+    @Column
     private Integer currentOccupancy = 0;
 
-    @Column(nullable = false)
+    @Column
     private BigDecimal dailyRate;
 
     private String floor;
@@ -48,10 +47,10 @@ public class Room {
 
     private String description;
 
-    @Column(nullable = false)
+    @Column
     private Boolean available = true;
 
-    @Column(nullable = false)
+    @Column
     private Boolean active = true;
 
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -59,7 +58,7 @@ public class Room {
     private List<RoomBooking> bookings = new ArrayList<>();
 
     @CreatedDate
-    @Column(updatable = false)
+    @Column
     private LocalDateTime createdAt;
 
     @LastModifiedDate
