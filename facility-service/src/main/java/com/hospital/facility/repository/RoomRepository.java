@@ -2,40 +2,38 @@ package com.hospital.facility.repository;
 
 import com.hospital.facility.entity.Room;
 import com.hospital.facility.entity.RoomType;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface RoomRepository extends JpaRepository<Room, UUID> {
+public interface RoomRepository extends R2dbcRepository<Room, UUID> {
 
-    Optional<Room> findByRoomNumber(String roomNumber);
+    Mono<Room> findByRoomNumber(String roomNumber);
 
-    List<Room> findByRoomTypeAndActiveTrue(RoomType roomType);
+    Flux<Room> findByRoomTypeAndActiveTrue(RoomType roomType);
 
-    List<Room> findByAvailableTrueAndActiveTrue();
+    Flux<Room> findByAvailableTrueAndActiveTrue();
 
-    Page<Room> findByActiveTrue(Pageable pageable);
+    Flux<Room> findByActiveTrue();
 
-    @Query("SELECT r FROM Room r WHERE r.roomType = :roomType AND r.available = true AND r.active = true AND r.currentOccupancy < r.capacity")
-    List<Room> findAvailableRoomsByType(@Param("roomType") RoomType roomType);
+    @Query("SELECT * FROM rooms WHERE room_type = :roomType AND available = true AND active = true AND current_occupancy < capacity")
+    Flux<Room> findAvailableRoomsByType(@Param("roomType") RoomType roomType);
 
-    @Query("SELECT r FROM Room r WHERE r.floor = :floor AND r.active = true")
-    List<Room> findByFloor(@Param("floor") String floor);
+    @Query("SELECT * FROM rooms WHERE floor = :floor AND active = true")
+    Flux<Room> findByFloor(@Param("floor") String floor);
 
-    @Query("SELECT r FROM Room r WHERE r.wing = :wing AND r.active = true")
-    List<Room> findByWing(@Param("wing") String wing);
+    @Query("SELECT * FROM rooms WHERE wing = :wing AND active = true")
+    Flux<Room> findByWing(@Param("wing") String wing);
 
-    @Query("SELECT COUNT(r) FROM Room r WHERE r.available = true AND r.active = true")
-    long countAvailableRooms();
+    @Query("SELECT COUNT(*) FROM rooms WHERE available = true AND active = true")
+    Mono<Long> countAvailableRooms();
 
-    @Query("SELECT SUM(r.capacity - r.currentOccupancy) FROM Room r WHERE r.active = true")
-    Long countAvailableBeds();
+    @Query("SELECT SUM(capacity - current_occupancy) FROM rooms WHERE active = true")
+    Mono<Long> countAvailableBeds();
 }

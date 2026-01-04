@@ -2,55 +2,49 @@ package com.hospital.doctor.repository;
 
 import com.hospital.common.enums.Specialty;
 import com.hospital.doctor.entity.Doctor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Doctor repository for database operations
+ * Doctor repository for R2DBC database operations
  */
 @Repository
-public interface DoctorRepository extends JpaRepository<Doctor, UUID> {
+public interface DoctorRepository extends R2dbcRepository<Doctor, UUID> {
 
-    Optional<Doctor> findByUserId(UUID userId);
+    Mono<Doctor> findByUserId(UUID userId);
 
-    Optional<Doctor> findByEmail(String email);
+    Mono<Doctor> findByEmail(String email);
 
-    Optional<Doctor> findByLicenseNumber(String licenseNumber);
+    Mono<Doctor> findByLicenseNumber(String licenseNumber);
 
-    boolean existsByEmail(String email);
+    Mono<Boolean> existsByEmail(String email);
 
-    boolean existsByUserId(UUID userId);
+    Mono<Boolean> existsByUserId(UUID userId);
 
-    boolean existsByLicenseNumber(String licenseNumber);
+    Mono<Boolean> existsByLicenseNumber(String licenseNumber);
 
-    List<Doctor> findBySpecialty(Specialty specialty);
+    Flux<Doctor> findBySpecialty(Specialty specialty);
 
-    Page<Doctor> findBySpecialty(Specialty specialty, Pageable pageable);
+    @Query("SELECT * FROM doctors WHERE specialty = :specialty AND available = true AND active = true")
+    Flux<Doctor> findAvailableDoctorsBySpecialty(@Param("specialty") Specialty specialty);
 
-    @Query("SELECT d FROM Doctor d WHERE d.specialty = :specialty AND d.available = true AND d.active = true")
-    List<Doctor> findAvailableDoctorsBySpecialty(@Param("specialty") Specialty specialty);
+    @Query("SELECT * FROM doctors WHERE LOWER(name) LIKE LOWER(CONCAT('%', :search, '%')) OR LOWER(email) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Flux<Doctor> searchDoctors(@Param("search") String search);
 
-    @Query("SELECT d FROM Doctor d WHERE " +
-           "LOWER(d.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(d.email) LIKE LOWER(CONCAT('%', :search, '%'))")
-    Page<Doctor> searchDoctors(@Param("search") String search, Pageable pageable);
+    @Query("SELECT * FROM doctors WHERE active = true")
+    Flux<Doctor> findActiveDoctors();
 
-    @Query("SELECT d FROM Doctor d WHERE d.active = true")
-    Page<Doctor> findActiveDoctors(Pageable pageable);
+    @Query("SELECT * FROM doctors WHERE available = true AND active = true")
+    Flux<Doctor> findAvailableDoctors();
 
-    @Query("SELECT d FROM Doctor d WHERE d.available = true AND d.active = true")
-    Page<Doctor> findAvailableDoctors(Pageable pageable);
+    Mono<Long> countBySpecialty(Specialty specialty);
 
-    long countBySpecialty(Specialty specialty);
-
-    @Query("SELECT COUNT(d) FROM Doctor d WHERE d.specialty = :specialty AND d.available = true AND d.active = true")
-    long countAvailableBySpecialty(@Param("specialty") Specialty specialty);
+    @Query("SELECT COUNT(*) FROM doctors WHERE specialty = :specialty AND available = true AND active = true")
+    Mono<Long> countAvailableBySpecialty(@Param("specialty") Specialty specialty);
 }

@@ -3,67 +3,62 @@ package com.hospital.audit.repository;
 import com.hospital.audit.entity.AuditAction;
 import com.hospital.audit.entity.AuditCategory;
 import com.hospital.audit.entity.AuditLog;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface AuditLogRepository extends JpaRepository<AuditLog, UUID>, JpaSpecificationExecutor<AuditLog> {
+public interface AuditLogRepository extends R2dbcRepository<AuditLog, UUID> {
 
-    Page<AuditLog> findByCategory(AuditCategory category, Pageable pageable);
+    Flux<AuditLog> findByCategory(AuditCategory category);
 
-    Page<AuditLog> findByAction(AuditAction action, Pageable pageable);
+    Flux<AuditLog> findByAction(AuditAction action);
 
-    Page<AuditLog> findByUserId(UUID userId, Pageable pageable);
+    Flux<AuditLog> findByUserId(UUID userId);
 
-    Page<AuditLog> findByEntityId(String entityId, Pageable pageable);
+    Flux<AuditLog> findByEntityId(String entityId);
 
-    Page<AuditLog> findByServiceName(String serviceName, Pageable pageable);
+    Flux<AuditLog> findByServiceName(String serviceName);
 
-    @Query("SELECT a FROM AuditLog a WHERE a.timestamp BETWEEN :startDate AND :endDate ORDER BY a.timestamp DESC")
-    Page<AuditLog> findByDateRange(
+    @Query("SELECT * FROM audit_logs WHERE timestamp BETWEEN :startDate AND :endDate ORDER BY timestamp DESC")
+    Flux<AuditLog> findByDateRange(
         @Param("startDate") LocalDateTime startDate,
-        @Param("endDate") LocalDateTime endDate,
-        Pageable pageable
+        @Param("endDate") LocalDateTime endDate
     );
 
-    @Query("SELECT a FROM AuditLog a WHERE a.category = :category AND a.action = :action ORDER BY a.timestamp DESC")
-    Page<AuditLog> findByCategoryAndAction(
+    @Query("SELECT * FROM audit_logs WHERE category = :category AND action = :action ORDER BY timestamp DESC")
+    Flux<AuditLog> findByCategoryAndAction(
         @Param("category") AuditCategory category,
-        @Param("action") AuditAction action,
-        Pageable pageable
+        @Param("action") AuditAction action
     );
 
-    @Query("SELECT a FROM AuditLog a WHERE a.entityType = :entityType AND a.entityId = :entityId ORDER BY a.timestamp DESC")
-    List<AuditLog> findEntityHistory(
+    @Query("SELECT * FROM audit_logs WHERE entity_type = :entityType AND entity_id = :entityId ORDER BY timestamp DESC")
+    Flux<AuditLog> findEntityHistory(
         @Param("entityType") String entityType,
         @Param("entityId") String entityId
     );
 
-    @Query("SELECT a FROM AuditLog a WHERE a.userId = :userId AND a.timestamp BETWEEN :startDate AND :endDate ORDER BY a.timestamp DESC")
-    Page<AuditLog> findUserActivityInRange(
+    @Query("SELECT * FROM audit_logs WHERE user_id = :userId AND timestamp BETWEEN :startDate AND :endDate ORDER BY timestamp DESC")
+    Flux<AuditLog> findUserActivityInRange(
         @Param("userId") UUID userId,
         @Param("startDate") LocalDateTime startDate,
-        @Param("endDate") LocalDateTime endDate,
-        Pageable pageable
+        @Param("endDate") LocalDateTime endDate
     );
 
-    @Query("SELECT a.category, COUNT(a) FROM AuditLog a WHERE a.timestamp >= :since GROUP BY a.category")
-    List<Object[]> countByCategory(@Param("since") LocalDateTime since);
+    @Query("SELECT category, COUNT(*) as count FROM audit_logs WHERE timestamp >= :since GROUP BY category")
+    Flux<Object[]> countByCategory(@Param("since") LocalDateTime since);
 
-    @Query("SELECT a.action, COUNT(a) FROM AuditLog a WHERE a.timestamp >= :since GROUP BY a.action")
-    List<Object[]> countByAction(@Param("since") LocalDateTime since);
+    @Query("SELECT action, COUNT(*) as count FROM audit_logs WHERE timestamp >= :since GROUP BY action")
+    Flux<Object[]> countByAction(@Param("since") LocalDateTime since);
 
-    @Query("SELECT a.serviceName, COUNT(a) FROM AuditLog a WHERE a.timestamp >= :since GROUP BY a.serviceName")
-    List<Object[]> countByService(@Param("since") LocalDateTime since);
+    @Query("SELECT service_name, COUNT(*) as count FROM audit_logs WHERE timestamp >= :since GROUP BY service_name")
+    Flux<Object[]> countByService(@Param("since") LocalDateTime since);
 
-    long countBySuccess(Boolean success);
+    Mono<Long> countBySuccess(Boolean success);
 }
