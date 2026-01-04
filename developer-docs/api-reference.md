@@ -2,6 +2,51 @@
 
 All requests go through the API Gateway at `http://localhost:8080`.
 
+## Swagger UI (Interactive API Documentation)
+
+Each service provides interactive API documentation via Swagger UI.
+
+### Aggregated Documentation (Recommended)
+
+Access all service APIs from a single interface:
+
+```
+http://localhost:8080/swagger-ui.html
+```
+
+Use the dropdown selector to switch between services.
+
+### Individual Service Documentation
+
+| Service | Swagger UI | OpenAPI JSON |
+|---------|------------|--------------|
+| Auth | http://localhost:8081/swagger-ui.html | http://localhost:8081/v3/api-docs |
+| Patient | http://localhost:8082/swagger-ui.html | http://localhost:8082/v3/api-docs |
+| Doctor | http://localhost:8083/swagger-ui.html | http://localhost:8083/v3/api-docs |
+| Appointment | http://localhost:8084/swagger-ui.html | http://localhost:8084/v3/api-docs |
+| Medical Records | http://localhost:8085/swagger-ui.html | http://localhost:8085/v3/api-docs |
+| Facility | http://localhost:8086/swagger-ui.html | http://localhost:8086/v3/api-docs |
+| Notification | http://localhost:8087/swagger-ui.html | http://localhost:8087/v3/api-docs |
+| Audit | http://localhost:8088/swagger-ui.html | http://localhost:8088/v3/api-docs |
+
+### Via API Gateway
+
+Access service docs through the gateway:
+
+```
+http://localhost:8080/auth-service/swagger-ui.html
+http://localhost:8080/patient-service/swagger-ui.html
+http://localhost:8080/doctor-service/swagger-ui.html
+```
+
+### Using Swagger UI
+
+1. Open Swagger UI in your browser
+2. Click "Authorize" button (top right)
+3. Enter your JWT token: `Bearer eyJhbGciOiJIUzUxMiJ9...`
+4. Click "Authorize" to save
+5. Now you can test protected endpoints
+
 ## Authentication
 
 ### Register User

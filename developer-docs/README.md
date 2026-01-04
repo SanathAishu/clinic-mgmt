@@ -79,6 +79,22 @@ docker-compose down
 | Notification Service | 8087 | Email notifications |
 | Audit Service | 8088 | Audit logging |
 
+## Swagger UI (API Documentation)
+
+Interactive API documentation is available via Swagger UI:
+
+| Endpoint | Description |
+|----------|-------------|
+| http://localhost:8080/swagger-ui.html | Aggregated docs (all services) |
+| http://localhost:8081/swagger-ui.html | Auth Service |
+| http://localhost:8082/swagger-ui.html | Patient Service |
+| http://localhost:8083/swagger-ui.html | Doctor Service |
+
+To authenticate in Swagger UI:
+1. Click "Authorize" button
+2. Enter: `Bearer <your-jwt-token>`
+3. Click "Authorize"
+
 ## Project Structure
 
 ```
