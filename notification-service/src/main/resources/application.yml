@@ -74,6 +74,17 @@ notification:
     max-attempts: 3
     delay-ms: 1000
 
+springdoc:
+  api:
+    title: Notification Service API
+    description: Notification service - email notifications, SMS alerts
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+
 logging:
   level:
     com.hospital.notification: DEBUG

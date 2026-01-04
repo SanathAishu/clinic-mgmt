@@ -33,7 +33,11 @@ public class SecurityConfig {
                                 "/api/auth/validate",
                                 "/api/auth/public-key",
                                 "/api/auth/health",
-                                "/actuator/**"
+                                "/actuator/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/webjars/**"
                         ).permitAll()
                         .anyExchange().authenticated()
                 )

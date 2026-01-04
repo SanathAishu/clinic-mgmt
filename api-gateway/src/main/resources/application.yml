@@ -73,6 +73,63 @@ spring:
           filters:
             - AuthenticationFilter
 
+        # Swagger UI Routes (no authentication)
+        - id: auth-service-docs
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/auth-service/v3/api-docs,/auth-service/swagger-ui/**
+          filters:
+            - RewritePath=/auth-service/(?<path>.*), /$\{path}
+
+        - id: patient-service-docs
+          uri: lb://PATIENT-SERVICE
+          predicates:
+            - Path=/patient-service/v3/api-docs,/patient-service/swagger-ui/**
+          filters:
+            - RewritePath=/patient-service/(?<path>.*), /$\{path}
+
+        - id: doctor-service-docs
+          uri: lb://DOCTOR-SERVICE
+          predicates:
+            - Path=/doctor-service/v3/api-docs,/doctor-service/swagger-ui/**
+          filters:
+            - RewritePath=/doctor-service/(?<path>.*), /$\{path}
+
+        - id: appointment-service-docs
+          uri: lb://APPOINTMENT-SERVICE
+          predicates:
+            - Path=/appointment-service/v3/api-docs,/appointment-service/swagger-ui/**
+          filters:
+            - RewritePath=/appointment-service/(?<path>.*), /$\{path}
+
+        - id: medical-records-service-docs
+          uri: lb://MEDICAL-RECORDS-SERVICE
+          predicates:
+            - Path=/medical-records-service/v3/api-docs,/medical-records-service/swagger-ui/**
+          filters:
+            - RewritePath=/medical-records-service/(?<path>.*), /$\{path}
+
+        - id: facility-service-docs
+          uri: lb://FACILITY-SERVICE
+          predicates:
+            - Path=/facility-service/v3/api-docs,/facility-service/swagger-ui/**
+          filters:
+            - RewritePath=/facility-service/(?<path>.*), /$\{path}
+
+        - id: notification-service-docs
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/notification-service/v3/api-docs,/notification-service/swagger-ui/**
+          filters:
+            - RewritePath=/notification-service/(?<path>.*), /$\{path}
+
+        - id: audit-service-docs
+          uri: lb://AUDIT-SERVICE
+          predicates:
+            - Path=/audit-service/v3/api-docs,/audit-service/swagger-ui/**
+          filters:
+            - RewritePath=/audit-service/(?<path>.*), /$\{path}
+
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
       globalcors:
@@ -109,6 +166,33 @@ management:
       show-details: always
     gateway:
       enabled: true
+
+springdoc:
+  api:
+    title: Hospital Management System API
+    description: Aggregated API documentation for all microservices
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    urls:
+      - name: Auth Service
+        url: /auth-service/v3/api-docs
+      - name: Patient Service
+        url: /patient-service/v3/api-docs
+      - name: Doctor Service
+        url: /doctor-service/v3/api-docs
+      - name: Appointment Service
+        url: /appointment-service/v3/api-docs
+      - name: Medical Records Service
+        url: /medical-records-service/v3/api-docs
+      - name: Facility Service
+        url: /facility-service/v3/api-docs
+      - name: Notification Service
+        url: /notification-service/v3/api-docs
+      - name: Audit Service
+        url: /audit-service/v3/api-docs
+  api-docs:
+    enabled: true
 
 logging:
   level:

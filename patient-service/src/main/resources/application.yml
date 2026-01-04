@@ -53,6 +53,17 @@ management:
     health:
       show-details: always
 
+springdoc:
+  api:
+    title: Patient Service API
+    description: Patient management service - demographics, medical history, emergency contacts
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+
 logging:
   level:
     com.hospital.patient: DEBUG

@@ -51,6 +51,17 @@ management:
     health:
       show-details: always
 
+springdoc:
+  api:
+    title: Audit Service API
+    description: Audit logging service - system audit logs, user activity tracking
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+
 logging:
   level:
     com.hospital.audit: DEBUG

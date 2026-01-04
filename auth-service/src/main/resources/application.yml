@@ -55,6 +55,17 @@ management:
     health:
       show-details: always
 
+springdoc:
+  api:
+    title: Auth Service API
+    description: Authentication and authorization service - user registration, login, JWT token management
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+
 logging:
   level:
     com.hospital.auth: DEBUG
