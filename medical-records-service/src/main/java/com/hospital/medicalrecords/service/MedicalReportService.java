@@ -10,15 +10,14 @@ import com.hospital.medicalrecords.repository.MedicalReportRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,98 +27,113 @@ public class MedicalReportService {
     private final MedicalReportRepository medicalReportRepository;
     private final MedicalRecordRepository medicalRecordRepository;
     private final ModelMapper modelMapper;
+    private final WebClient webClient;
 
     @Transactional
-    public MedicalReportDto createMedicalReport(CreateMedicalReportRequest request) {
+    public Mono<MedicalReportDto> createMedicalReport(CreateMedicalReportRequest request) {
         log.info("Creating medical report for medical record: {}", request.getMedicalRecordId());
 
-        MedicalRecord medicalRecord = medicalRecordRepository.findById(request.getMedicalRecordId())
-                .orElseThrow(() -> new NotFoundException("Medical record", request.getMedicalRecordId()));
+        return medicalRecordRepository.findById(request.getMedicalRecordId())
+                .switchIfEmpty(Mono.error(new NotFoundException("Medical record", request.getMedicalRecordId())))
+                .flatMap(medicalRecord -> {
+                    if (medicalRecord.getMedicalReport() != null) {
+                        return Mono.error(new ValidationException("Medical record already has a report"));
+                    }
 
-        if (medicalRecord.getMedicalReport() != null) {
-            throw new ValidationException("Medical record already has a report");
-        }
+                    MedicalReport report = MedicalReport.builder()
+                            .medicalRecord(medicalRecord)
+                            .patientId(medicalRecord.getPatientId())
+                            .doctorId(medicalRecord.getDoctorId())
+                            .reportType(request.getReportType())
+                            .reportDate(request.getReportDate())
+                            .findings(request.getFindings())
+                            .conclusion(request.getConclusion())
+                            .recommendations(request.getRecommendations())
+                            .labName(request.getLabName())
+                            .technicianName(request.getTechnicianName())
+                            .active(true)
+                            .build();
 
-        MedicalReport report = MedicalReport.builder()
-                .medicalRecord(medicalRecord)
-                .patientId(medicalRecord.getPatientId())
-                .doctorId(medicalRecord.getDoctorId())
-                .reportType(request.getReportType())
-                .reportDate(request.getReportDate())
-                .findings(request.getFindings())
-                .conclusion(request.getConclusion())
-                .recommendations(request.getRecommendations())
-                .labName(request.getLabName())
-                .technicianName(request.getTechnicianName())
-                .active(true)
-                .build();
-
-        report = medicalReportRepository.save(report);
-
-        log.info("Created medical report with ID: {}", report.getId());
-        return mapToDto(report);
+                    return medicalReportRepository.save(report);
+                })
+                .map(this::mapToDto)
+                .doOnSuccess(dto -> {
+                    log.info("Created medical report with ID: {}", dto.getId());
+                    notifyMedicalReportCreated(dto).subscribe();
+                });
     }
 
-    @Cacheable(value = "medicalReports", key = "#id")
-    public MedicalReportDto getMedicalReportById(UUID id) {
+    @Transactional(readOnly = true)
+    public Mono<MedicalReportDto> getMedicalReportById(UUID id) {
         log.info("Fetching medical report by ID: {}", id);
 
-        MedicalReport report = medicalReportRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Medical report", id));
-
-        return mapToDto(report);
+        return medicalReportRepository.findById(id)
+                .map(this::mapToDto)
+                .switchIfEmpty(Mono.error(new NotFoundException("Medical report", id)));
     }
 
-    public List<MedicalReportDto> getMedicalReportsByPatientId(UUID patientId) {
+    @Transactional(readOnly = true)
+    public Flux<MedicalReportDto> getMedicalReportsByPatientId(UUID patientId) {
         log.info("Fetching medical reports for patient: {}", patientId);
         return medicalReportRepository.findByPatientIdAndActiveTrue(patientId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
-    public List<MedicalReportDto> getMedicalReportsByDoctorId(UUID doctorId) {
+    @Transactional(readOnly = true)
+    public Flux<MedicalReportDto> getMedicalReportsByDoctorId(UUID doctorId) {
         log.info("Fetching medical reports for doctor: {}", doctorId);
         return medicalReportRepository.findByDoctorIdAndActiveTrue(doctorId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
-    public List<MedicalReportDto> getMedicalReportsByPatientIdAndType(UUID patientId, String reportType) {
+    @Transactional(readOnly = true)
+    public Flux<MedicalReportDto> getMedicalReportsByPatientIdAndType(UUID patientId, String reportType) {
         log.info("Fetching medical reports for patient {} with type: {}", patientId, reportType);
         return medicalReportRepository.findByPatientIdAndReportTypeAndActiveTrue(patientId, reportType)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
-    public List<MedicalReportDto> getMedicalReportsByPatientIdAndDateRange(
+    @Transactional(readOnly = true)
+    public Flux<MedicalReportDto> getMedicalReportsByPatientIdAndDateRange(
             UUID patientId, LocalDate startDate, LocalDate endDate) {
         log.info("Fetching medical reports for patient {} between {} and {}", patientId, startDate, endDate);
         return medicalReportRepository.findByPatientIdAndDateRange(patientId, startDate, endDate)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
     @Transactional
-    @CacheEvict(value = "medicalReports", key = "#id")
-    public void deleteMedicalReport(UUID id) {
+    public Mono<Void> deleteMedicalReport(UUID id) {
         log.info("Soft deleting medical report: {}", id);
 
-        MedicalReport report = medicalReportRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Medical report", id));
-
-        report.setActive(false);
-        medicalReportRepository.save(report);
-
-        log.info("Soft deleted medical report: {}", id);
+        return medicalReportRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Medical report", id)))
+                .flatMap(report -> {
+                    report.setActive(false);
+                    return medicalReportRepository.save(report);
+                })
+                .doOnSuccess(report -> log.info("Soft deleted medical report: {}", id))
+                .then();
     }
 
     private MedicalReportDto mapToDto(MedicalReport report) {
         MedicalReportDto dto = modelMapper.map(report, MedicalReportDto.class);
-        dto.setMedicalRecordId(report.getMedicalRecord().getId());
+        if (report.getMedicalRecordId() != null) {
+            dto.setMedicalRecordId(report.getMedicalRecordId());
+        } else if (report.getMedicalRecord() != null) {
+            dto.setMedicalRecordId(report.getMedicalRecord().getId());
+        }
         return dto;
+    }
+
+    private Mono<Void> notifyMedicalReportCreated(MedicalReportDto report) {
+        return webClient.post()
+                .uri("http://notification-service/api/notifications/medical-report-created")
+                .bodyValue(report)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .onErrorResume(e -> {
+                    log.warn("Failed to notify medical report creation: {}", e.getMessage());
+                    return Mono.empty();
+                });
     }
 }

@@ -16,49 +16,41 @@
     <description>Appointment scheduling with snapshots, Feign clients, and event consumers</description>
 
     <dependencies>
-        <!-- Spring Boot Web -->
+        <!-- Spring Boot WebFlux (Reactive) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
-        <!-- Spring Data JPA -->
+        <!-- Spring Data R2DBC (Reactive Database) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <!-- Spring Data R2DBC (Reactive Database) -->
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-data-r2dbc</artifactId>
-            </dependency>
+            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
+        </dependency>
 
-            <!-- PostgreSQL R2DBC Driver -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>r2dbc-postgresql</artifactId>
-                <scope>runtime</scope>
-            </dependency>
+        <!-- PostgreSQL R2DBC Driver -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>r2dbc-postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
-            <!-- PostgreSQL Driver (for migration tools) -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-            </dependency>
+        <!-- PostgreSQL Driver (for migration tools) -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+        </dependency>
+
         <!-- Flyway Database Migration -->
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
+
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
             <scope>runtime</scope>
-        </dependency>
-
-
-        <!-- PostgreSQL Driver -->
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
         </dependency>
 
         <!-- Spring Data Redis -->
@@ -67,9 +59,11 @@
             <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
 
-        <!-- Spring AMQP (RabbitMQ) -->
+        <!-- Spring WebFlux for Reactive WebClient -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
+        </dependency>
 
         <!-- Validation -->
         <dependency>
@@ -81,12 +75,6 @@
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-        </dependency>
-
-        <!-- OpenFeign -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
         <!-- Hospital Common -->
@@ -101,10 +89,10 @@
             <artifactId>modelmapper</artifactId>
         </dependency>
 
-        <!-- SpringDoc OpenAPI (Swagger) -->
+        <!-- SpringDoc OpenAPI (Swagger for WebFlux) -->
         <dependency>
             <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
         </dependency>
 
         <!-- Spring Boot Actuator -->

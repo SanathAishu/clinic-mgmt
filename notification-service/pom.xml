@@ -16,19 +16,16 @@
     <description>Event-driven notification service for Hospital Management System</description>
 
     <dependencies>
-        <!-- Spring Boot Starters -->
+        <!-- Spring Boot WebFlux (Reactive) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -73,11 +70,6 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework.amqp</groupId>
-            <artifactId>spring-rabbit-test</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 
     <build>

@@ -15,55 +15,43 @@
     <description>Audit logging microservice for tracking all system activities</description>
 
     <dependencies>
-        <!-- Spring Boot Web -->
+        <!-- Spring Boot WebFlux (Reactive) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
-        <!-- Spring Data JPA -->
+        <!-- Spring Data R2DBC (Reactive Database) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <!-- Spring Data R2DBC (Reactive Database) -->
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-starter-data-r2dbc</artifactId>
-            </dependency>
-
-            <!-- PostgreSQL R2DBC Driver -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>r2dbc-postgresql</artifactId>
-                <scope>runtime</scope>
-            </dependency>
-
-            <!-- PostgreSQL Driver (for migration tools) -->
-            <dependency>
-                <groupId>org.postgresql</groupId>
-                <artifactId>postgresql</artifactId>
-            </dependency>
-        <!-- Flyway Database Migration -->
-        <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-core</artifactId>
+            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
         </dependency>
+
+        <!-- PostgreSQL R2DBC Driver -->
         <dependency>
-            <groupId>org.flywaydb</groupId>
-            <artifactId>flyway-database-postgresql</artifactId>
+            <groupId>org.postgresql</groupId>
+            <artifactId>r2dbc-postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-
-        <!-- PostgreSQL -->
+        <!-- PostgreSQL Driver (for Flyway migrations) -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- RabbitMQ -->
+        <!-- Flyway Database Migration -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 
         <!-- Spring Cloud Eureka Client -->
         <dependency>
@@ -77,10 +65,10 @@
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
-        <!-- SpringDoc OpenAPI -->
+        <!-- SpringDoc OpenAPI (Swagger for WebFlux) -->
         <dependency>
             <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
         </dependency>
 
         <!-- Hospital Common -->

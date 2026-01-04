@@ -6,7 +6,6 @@ import com.hospital.appointment.dto.UpdateAppointmentRequest;
 import com.hospital.appointment.entity.Appointment;
 import com.hospital.appointment.entity.DoctorSnapshot;
 import com.hospital.appointment.entity.PatientSnapshot;
-import com.hospital.appointment.event.AppointmentEventPublisher;
 import com.hospital.appointment.repository.AppointmentRepository;
 import com.hospital.appointment.repository.DoctorSnapshotRepository;
 import com.hospital.appointment.repository.PatientSnapshotRepository;
@@ -16,22 +15,15 @@ import com.hospital.common.exception.ValidationException;
 import com.hospital.common.util.DiseaseSpecialtyMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-/**
- * Appointment service with disease-specialty matching and snapshot integration
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -40,234 +32,182 @@ public class AppointmentService {
     private final AppointmentRepository appointmentRepository;
     private final PatientSnapshotRepository patientSnapshotRepository;
     private final DoctorSnapshotRepository doctorSnapshotRepository;
-    private final AppointmentEventPublisher eventPublisher;
+    private final WebClient webClient;
 
-    /**
-     * Create a new appointment with disease-specialty validation
-     */
     @Transactional
-    public AppointmentDto createAppointment(CreateAppointmentRequest request) {
+    public Mono<AppointmentDto> createAppointment(CreateAppointmentRequest request) {
         log.info("Creating appointment for patient {} with doctor {}", request.getPatientId(), request.getDoctorId());
 
-        // Fetch patient snapshot
-        PatientSnapshot patient = patientSnapshotRepository.findById(request.getPatientId())
-                .orElseThrow(() -> new NotFoundException("Patient snapshot", request.getPatientId()));
+        return Mono.zip(
+                patientSnapshotRepository.findById(request.getPatientId())
+                        .switchIfEmpty(Mono.error(new NotFoundException("Patient snapshot", request.getPatientId()))),
+                doctorSnapshotRepository.findById(request.getDoctorId())
+                        .switchIfEmpty(Mono.error(new NotFoundException("Doctor snapshot", request.getDoctorId())))
+        ).flatMap(tuple -> {
+            PatientSnapshot patient = tuple.getT1();
+            DoctorSnapshot doctor = tuple.getT2();
 
-        // Fetch doctor snapshot
-        DoctorSnapshot doctor = doctorSnapshotRepository.findById(request.getDoctorId())
-                .orElseThrow(() -> new NotFoundException("Doctor snapshot", request.getDoctorId()));
+            if (!DiseaseSpecialtyMapper.isSpecialtyMatchingDisease(patient.getDisease(), doctor.getSpecialty())) {
+                return Mono.error(new ValidationException(
+                        "Doctor specialty " + doctor.getSpecialty() +
+                        " does not match patient disease " + patient.getDisease() +
+                        ". Expected specialty: " + DiseaseSpecialtyMapper.getSpecialtyForDisease(patient.getDisease())
+                ));
+            }
 
-        // Validate disease-specialty matching
-        if (!DiseaseSpecialtyMapper.isSpecialtyMatchingDisease(patient.getDisease(), doctor.getSpecialty())) {
-            throw new ValidationException(
-                    "Doctor specialty " + doctor.getSpecialty() +
-                    " does not match patient disease " + patient.getDisease() +
-                    ". Expected specialty: " + DiseaseSpecialtyMapper.getSpecialtyForDisease(patient.getDisease())
-            );
-        }
+            return appointmentRepository.findDoctorAppointmentsAtTime(request.getDoctorId(), request.getAppointmentDate())
+                    .collectList()
+                    .flatMap(existingAppointments -> {
+                        if (!existingAppointments.isEmpty()) {
+                            return Mono.error(new ValidationException("Doctor already has an appointment at this time"));
+                        }
 
-        // Check for doctor availability (no double booking)
-        List<Appointment> existingAppointments = appointmentRepository
-                .findDoctorAppointmentsAtTime(request.getDoctorId(), request.getAppointmentDate());
+                        Appointment appointment = Appointment.builder()
+                                .patientId(request.getPatientId())
+                                .doctorId(request.getDoctorId())
+                                .appointmentDate(request.getAppointmentDate())
+                                .reason(request.getReason())
+                                .status(AppointmentStatus.PENDING)
+                                .build();
 
-        if (!existingAppointments.isEmpty()) {
-            throw new ValidationException("Doctor already has an appointment at this time");
-        }
-
-        // Create appointment
-        Appointment appointment = Appointment.builder()
-                .patientId(request.getPatientId())
-                .doctorId(request.getDoctorId())
-                .appointmentDate(request.getAppointmentDate())
-                .reason(request.getReason())
-                .status(AppointmentStatus.PENDING)
-                .build();
-
-        appointment = appointmentRepository.save(appointment);
-
-        log.info("Appointment created successfully with ID: {}", appointment.getId());
-
-        // Publish AppointmentCreatedEvent
-        eventPublisher.publishAppointmentCreated(appointment, patient, doctor);
-
-        return mapToDto(appointment, patient, doctor);
+                        return appointmentRepository.save(appointment)
+                                .map(saved -> mapToDto(saved, patient, doctor));
+                    });
+        }).doOnSuccess(dto -> {
+            log.info("Appointment created successfully with ID: {}", dto.getId());
+            notifyAppointmentCreated(dto).subscribe();
+        });
     }
 
-    /**
-     * Get appointment by ID with caching
-     */
-    @Cacheable(value = "appointments", key = "#id")
     @Transactional(readOnly = true)
-    public AppointmentDto getAppointmentById(UUID id) {
+    public Mono<AppointmentDto> getAppointmentById(UUID id) {
         log.info("Fetching appointment with ID: {}", id);
 
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Appointment", id));
-
-        return mapToDtoWithSnapshots(appointment);
+        return appointmentRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Appointment", id)))
+                .flatMap(this::mapToDtoWithSnapshots);
     }
 
-    /**
-     * Get all appointments with pagination
-     */
     @Transactional(readOnly = true)
-    public Page<AppointmentDto> getAllAppointments(Pageable pageable) {
-        log.info("Fetching all appointments, page: {}", pageable.getPageNumber());
+    public Flux<AppointmentDto> getAllAppointments() {
+        log.info("Fetching all appointments");
 
-        return appointmentRepository.findAll(pageable)
-                .map(this::mapToDtoWithSnapshots);
+        return appointmentRepository.findAll()
+                .flatMap(this::mapToDtoWithSnapshots);
     }
 
-    /**
-     * Get appointments by patient ID
-     */
     @Transactional(readOnly = true)
-    public List<AppointmentDto> getAppointmentsByPatientId(UUID patientId) {
+    public Flux<AppointmentDto> getAppointmentsByPatientId(UUID patientId) {
         log.info("Fetching appointments for patient ID: {}", patientId);
 
-        return appointmentRepository.findByPatientId(patientId).stream()
-                .map(this::mapToDtoWithSnapshots)
-                .collect(Collectors.toList());
+        return appointmentRepository.findByPatientId(patientId)
+                .flatMap(this::mapToDtoWithSnapshots);
     }
 
-    /**
-     * Get appointments by doctor ID
-     */
     @Transactional(readOnly = true)
-    public List<AppointmentDto> getAppointmentsByDoctorId(UUID doctorId) {
+    public Flux<AppointmentDto> getAppointmentsByDoctorId(UUID doctorId) {
         log.info("Fetching appointments for doctor ID: {}", doctorId);
 
-        return appointmentRepository.findByDoctorId(doctorId).stream()
-                .map(this::mapToDtoWithSnapshots)
-                .collect(Collectors.toList());
+        return appointmentRepository.findByDoctorId(doctorId)
+                .flatMap(this::mapToDtoWithSnapshots);
     }
 
-    /**
-     * Get appointments by status
-     */
     @Transactional(readOnly = true)
-    public List<AppointmentDto> getAppointmentsByStatus(AppointmentStatus status) {
+    public Flux<AppointmentDto> getAppointmentsByStatus(AppointmentStatus status) {
         log.info("Fetching appointments with status: {}", status);
 
-        return appointmentRepository.findByStatus(status).stream()
-                .map(this::mapToDtoWithSnapshots)
-                .collect(Collectors.toList());
+        return appointmentRepository.findByStatus(status)
+                .flatMap(this::mapToDtoWithSnapshots);
     }
 
-    /**
-     * Get upcoming appointments (for reminders)
-     */
     @Transactional(readOnly = true)
-    public List<AppointmentDto> getUpcomingAppointments(int hoursAhead) {
+    public Flux<AppointmentDto> getUpcomingAppointments(int hoursAhead) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime endTime = now.plusHours(hoursAhead);
 
-        return appointmentRepository.findUpcomingAppointments(AppointmentStatus.CONFIRMED, now, endTime).stream()
-                .map(this::mapToDtoWithSnapshots)
-                .collect(Collectors.toList());
+        return appointmentRepository.findUpcomingAppointments(AppointmentStatus.CONFIRMED, now, endTime)
+                .flatMap(this::mapToDtoWithSnapshots);
     }
 
-    /**
-     * Update appointment with cache update
-     */
-    @CachePut(value = "appointments", key = "#id")
     @Transactional
-    public AppointmentDto updateAppointment(UUID id, UpdateAppointmentRequest request) {
+    public Mono<AppointmentDto> updateAppointment(UUID id, UpdateAppointmentRequest request) {
         log.info("Updating appointment with ID: {}", id);
 
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Appointment", id));
+        return appointmentRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Appointment", id)))
+                .flatMap(appointment -> {
+                    if (request.getAppointmentDate() != null) {
+                        return appointmentRepository.findDoctorAppointmentsAtTime(appointment.getDoctorId(), request.getAppointmentDate())
+                                .collectList()
+                                .flatMap(conflicts -> {
+                                    if (!conflicts.isEmpty() && !conflicts.get(0).getId().equals(id)) {
+                                        return Mono.error(new ValidationException("Doctor already has an appointment at this time"));
+                                    }
+                                    appointment.setAppointmentDate(request.getAppointmentDate());
+                                    return Mono.just(appointment);
+                                });
+                    }
+                    return Mono.just(appointment);
+                })
+                .flatMap(appointment -> {
+                    if (request.getStatus() != null) appointment.setStatus(request.getStatus());
+                    if (request.getReason() != null) appointment.setReason(request.getReason());
+                    if (request.getNotes() != null) appointment.setNotes(request.getNotes());
 
-        // Update fields
-        if (request.getAppointmentDate() != null) {
-            // Check for doctor availability at new time
-            List<Appointment> conflicts = appointmentRepository
-                    .findDoctorAppointmentsAtTime(appointment.getDoctorId(), request.getAppointmentDate());
-
-            if (!conflicts.isEmpty() && !conflicts.get(0).getId().equals(id)) {
-                throw new ValidationException("Doctor already has an appointment at this time");
-            }
-            appointment.setAppointmentDate(request.getAppointmentDate());
-        }
-
-        if (request.getStatus() != null) appointment.setStatus(request.getStatus());
-        if (request.getReason() != null) appointment.setReason(request.getReason());
-        if (request.getNotes() != null) appointment.setNotes(request.getNotes());
-
-        appointment = appointmentRepository.save(appointment);
-
-        log.info("Appointment updated successfully: {}", id);
-
-        // Publish event if status changed to CANCELLED
-        if (request.getStatus() == AppointmentStatus.CANCELLED) {
-            eventPublisher.publishAppointmentCancelled(appointment);
-        }
-
-        return mapToDtoWithSnapshots(appointment);
+                    return appointmentRepository.save(appointment);
+                })
+                .flatMap(this::mapToDtoWithSnapshots)
+                .doOnSuccess(dto -> {
+                    log.info("Appointment updated successfully: {}", id);
+                    notifyAppointmentUpdated(dto).subscribe();
+                    if (dto.getStatus() == AppointmentStatus.CANCELLED) {
+                        notifyAppointmentCancelled(dto).subscribe();
+                    }
+                });
     }
 
-    /**
-     * Cancel appointment
-     */
-    @CachePut(value = "appointments", key = "#id")
     @Transactional
-    public AppointmentDto cancelAppointment(UUID id, String reason) {
+    public Mono<AppointmentDto> cancelAppointment(UUID id, String reason) {
         log.info("Cancelling appointment with ID: {}", id);
 
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Appointment", id));
-
-        appointment.setStatus(AppointmentStatus.CANCELLED);
-        appointment.setNotes(reason);
-        appointment = appointmentRepository.save(appointment);
-
-        log.info("Appointment cancelled: {}", id);
-
-        // Publish AppointmentCancelledEvent
-        eventPublisher.publishAppointmentCancelled(appointment);
-
-        return mapToDtoWithSnapshots(appointment);
+        return appointmentRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Appointment", id)))
+                .flatMap(appointment -> {
+                    appointment.setStatus(AppointmentStatus.CANCELLED);
+                    appointment.setNotes(reason);
+                    return appointmentRepository.save(appointment);
+                })
+                .flatMap(this::mapToDtoWithSnapshots)
+                .doOnSuccess(dto -> {
+                    log.info("Appointment cancelled: {}", id);
+                    notifyAppointmentCancelled(dto).subscribe();
+                });
     }
 
-    /**
-     * Delete appointment with cache eviction
-     */
-    @CacheEvict(value = "appointments", key = "#id")
     @Transactional
-    public void deleteAppointment(UUID id) {
+    public Mono<Void> deleteAppointment(UUID id) {
         log.info("Deleting appointment with ID: {}", id);
 
-        Appointment appointment = appointmentRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Appointment", id));
-
-        appointmentRepository.delete(appointment);
-
-        log.info("Appointment deleted successfully: {}", id);
+        return appointmentRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Appointment", id)))
+                .flatMap(appointment -> appointmentRepository.delete(appointment))
+                .doOnSuccess(v -> log.info("Appointment deleted successfully: {}", id));
     }
 
-    /**
-     * Get appointment count by status
-     */
     @Transactional(readOnly = true)
-    public long countByStatus(AppointmentStatus status) {
+    public Mono<Long> countByStatus(AppointmentStatus status) {
         return appointmentRepository.countByStatus(status);
     }
 
-    /**
-     * Map Appointment to DTO with snapshots
-     */
-    private AppointmentDto mapToDtoWithSnapshots(Appointment appointment) {
-        PatientSnapshot patient = patientSnapshotRepository.findById(appointment.getPatientId())
-                .orElse(null);
-        DoctorSnapshot doctor = doctorSnapshotRepository.findById(appointment.getDoctorId())
-                .orElse(null);
-
-        return mapToDto(appointment, patient, doctor);
+    private Mono<AppointmentDto> mapToDtoWithSnapshots(Appointment appointment) {
+        return Mono.zip(
+                patientSnapshotRepository.findById(appointment.getPatientId())
+                        .defaultIfEmpty(PatientSnapshot.builder().name("Unknown").email("Unknown").build()),
+                doctorSnapshotRepository.findById(appointment.getDoctorId())
+                        .defaultIfEmpty(DoctorSnapshot.builder().name("Unknown").email("Unknown").build())
+        ).map(tuple -> mapToDto(appointment, tuple.getT1(), tuple.getT2()));
     }
 
-    /**
-     * Map Appointment to DTO with provided snapshots
-     */
     private AppointmentDto mapToDto(Appointment appointment, PatientSnapshot patient, DoctorSnapshot doctor) {
         return AppointmentDto.builder()
                 .id(appointment.getId())
@@ -286,5 +226,41 @@ public class AppointmentService {
                 .createdAt(appointment.getCreatedAt())
                 .updatedAt(appointment.getUpdatedAt())
                 .build();
+    }
+
+    private Mono<Void> notifyAppointmentCreated(AppointmentDto appointment) {
+        return webClient.post()
+                .uri("http://notification-service/api/notifications/appointment-created")
+                .bodyValue(appointment)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .onErrorResume(e -> {
+                    log.warn("Failed to notify appointment creation: {}", e.getMessage());
+                    return Mono.empty();
+                });
+    }
+
+    private Mono<Void> notifyAppointmentUpdated(AppointmentDto appointment) {
+        return webClient.post()
+                .uri("http://notification-service/api/notifications/appointment-updated")
+                .bodyValue(appointment)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .onErrorResume(e -> {
+                    log.warn("Failed to notify appointment update: {}", e.getMessage());
+                    return Mono.empty();
+                });
+    }
+
+    private Mono<Void> notifyAppointmentCancelled(AppointmentDto appointment) {
+        return webClient.post()
+                .uri("http://notification-service/api/notifications/appointment-cancelled")
+                .bodyValue(appointment)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .onErrorResume(e -> {
+                    log.warn("Failed to notify appointment cancellation: {}", e.getMessage());
+                    return Mono.empty();
+                });
     }
 }

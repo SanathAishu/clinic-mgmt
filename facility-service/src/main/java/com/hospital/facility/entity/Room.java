@@ -1,18 +1,15 @@
 package com.hospital.facility.entity;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
+import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Table(name = "rooms")
@@ -21,10 +18,14 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Room {
+public class Room implements Persistable<UUID> {
 
     @Id
     private UUID id;
+
+    @Transient
+    @Builder.Default
+    private boolean isNew = true;
 
     @Column
     private String roomNumber;
@@ -53,15 +54,10 @@ public class Room {
     @Column
     private Boolean active = true;
 
-    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<RoomBooking> bookings = new ArrayList<>();
-
-    @CreatedDate
     @Column
     private LocalDateTime createdAt;
 
-    @LastModifiedDate
+    @Column
     private LocalDateTime updatedAt;
 
     public boolean hasAvailableBeds() {
@@ -82,5 +78,10 @@ public class Room {
             currentOccupancy--;
             available = true;
         }
+    }
+
+    @Override
+    public boolean isNew() {
+        return isNew;
     }
 }

@@ -5,20 +5,11 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Table(name = "audit_logs", indexes = {
-    @Index(name = "idx_audit_category", columnList = "category"),
-    @Index(name = "idx_audit_action", columnList = "action"),
-    @Index(name = "idx_audit_user_id", columnList = "user_id"),
-    @Index(name = "idx_audit_entity_id", columnList = "entity_id"),
-    @Index(name = "idx_audit_timestamp", columnList = "timestamp"),
-    @Index(name = "idx_audit_service", columnList = "service_name")
-})
+@Table(name = "audit_logs")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -83,7 +74,6 @@ public class AuditLog {
     @Column
     private String errorMessage;
 
-    @CreatedDate
     @Column
     private LocalDateTime timestamp;
 }

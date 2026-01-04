@@ -17,10 +17,10 @@
     <description>Authentication service with RS256 JWT and UUID-based users</description>
 
     <dependencies>
-        <!-- Spring Boot Web -->
+        <!-- Spring Boot WebFlux (Reactive) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
         <!-- Spring Data R2DBC (Reactive Database) -->

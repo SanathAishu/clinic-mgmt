@@ -5,9 +5,6 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,8 +21,10 @@ public class Prescription {
     @Id
     private UUID id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "medical_record_id", nullable = false)
+    @Column(value = "medical_record_id")
+    private UUID medicalRecordId;
+
+    @org.springframework.data.annotation.Transient
     private MedicalRecord medicalRecord;
 
     @Column
@@ -55,10 +54,9 @@ public class Prescription {
     @Column
     private Boolean active = true;
 
-    @CreatedDate
     @Column
     private LocalDateTime createdAt;
 
-    @LastModifiedDate
+    @Column
     private LocalDateTime updatedAt;
 }

@@ -5,9 +5,6 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -55,19 +52,18 @@ public class MedicalRecord {
 
     private Double height;
 
-    @OneToOne(mappedBy = "medicalRecord", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.springframework.data.annotation.Transient
     private Prescription prescription;
 
-    @OneToOne(mappedBy = "medicalRecord", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.springframework.data.annotation.Transient
     private MedicalReport medicalReport;
 
     @Column
     private Boolean active = true;
 
-    @CreatedDate
     @Column
     private LocalDateTime createdAt;
 
-    @LastModifiedDate
+    @Column
     private LocalDateTime updatedAt;
 }

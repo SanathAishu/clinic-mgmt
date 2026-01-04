@@ -16,10 +16,10 @@
     <description>Patient management service with UUID, events, and caching</description>
 
     <dependencies>
-        <!-- Spring Boot Web -->
+        <!-- Spring Boot WebFlux (Reactive) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
 
         <!-- Spring Data R2DBC (Reactive Database) -->
@@ -70,12 +70,6 @@
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
 
-        <!-- OpenFeign -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
-
         <!-- Hospital Common -->
         <dependency>
             <groupId>com.hospital</groupId>
@@ -88,10 +82,10 @@
             <artifactId>modelmapper</artifactId>
         </dependency>
 
-        <!-- SpringDoc OpenAPI (Swagger) -->
+        <!-- SpringDoc OpenAPI (Swagger for WebFlux) -->
         <dependency>
             <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
         </dependency>
 
         <!-- Spring Boot Actuator -->

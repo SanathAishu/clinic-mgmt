@@ -14,16 +14,6 @@ spring:
       max-acquire-time: 2s
       max-create-connection-time: 2s
       validation-query: SELECT 1
-    listener:
-      simple:
-        acknowledge-mode: manual
-        prefetch: 10
-        retry:
-          enabled: true
-          initial-interval: 1000
-          max-attempts: 3
-          max-interval: 10000
-          multiplier: 2.0
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -72,7 +62,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,rabbitmq
+        include: health,info,metrics
   endpoint:
     health:
       show-details: always
@@ -83,22 +73,6 @@ notification:
   retry:
     max-attempts: 3
     delay-ms: 1000
-
-rabbitmq:
-  queues:
-    appointment-notifications: appointment.notifications
-    patient-notifications: patient.notifications
-    doctor-notifications: doctor.notifications
-    billing-notifications: billing.notifications
-  exchanges:
-    notifications: hospital.notifications
-  routing-keys:
-    appointment-created: notification.appointment.created
-    appointment-updated: notification.appointment.updated
-    appointment-cancelled: notification.appointment.cancelled
-    patient-registered: notification.patient.registered
-    prescription-created: notification.prescription.created
-    invoice-generated: notification.invoice.generated
 
 logging:
   level:

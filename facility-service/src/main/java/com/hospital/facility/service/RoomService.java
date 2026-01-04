@@ -9,17 +9,13 @@ import com.hospital.facility.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -28,156 +24,154 @@ public class RoomService {
 
     private final RoomRepository roomRepository;
     private final ModelMapper modelMapper;
+    private final WebClient webClient;
 
     @Transactional
-    public RoomDto createRoom(CreateRoomRequest request) {
+    public Mono<RoomDto> createRoom(CreateRoomRequest request) {
         log.info("Creating room: {}", request.getRoomNumber());
 
-        if (roomRepository.findByRoomNumber(request.getRoomNumber()).isPresent()) {
-            throw new ValidationException("Room number already exists: " + request.getRoomNumber());
-        }
-
-        Room room = Room.builder()
-                .roomNumber(request.getRoomNumber())
-                .roomType(request.getRoomType())
-                .capacity(request.getCapacity())
-                .currentOccupancy(0)
-                .dailyRate(request.getDailyRate())
-                .floor(request.getFloor())
-                .wing(request.getWing())
-                .description(request.getDescription())
-                .available(true)
-                .active(true)
-                .build();
-
-        room = roomRepository.save(room);
-        log.info("Created room with ID: {}", room.getId());
-
-        return mapToDto(room);
+        return roomRepository.findByRoomNumber(request.getRoomNumber())
+                .flatMap(existingRoom -> Mono.<Room>error(
+                        new ValidationException("Room number already exists: " + request.getRoomNumber())))
+                .switchIfEmpty(Mono.defer(() -> {
+                    Room room = Room.builder()
+                            .id(UUID.randomUUID())
+                            .isNew(true)
+                            .roomNumber(request.getRoomNumber())
+                            .roomType(request.getRoomType())
+                            .capacity(request.getCapacity())
+                            .currentOccupancy(0)
+                            .dailyRate(request.getDailyRate())
+                            .floor(request.getFloor())
+                            .wing(request.getWing())
+                            .description(request.getDescription())
+                            .available(true)
+                            .active(true)
+                            .build();
+                    return roomRepository.save(room);
+                }))
+                .map(this::mapToDto)
+                .doOnSuccess(dto -> log.info("Created room with ID: {}", dto.getId()));
     }
 
-    @Cacheable(value = "rooms", key = "#id")
-    public RoomDto getRoomById(UUID id) {
+    @Transactional(readOnly = true)
+    public Mono<RoomDto> getRoomById(UUID id) {
         log.info("Fetching room by ID: {}", id);
 
-        Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Room", id));
-
-        return mapToDto(room);
+        return roomRepository.findById(id)
+                .map(this::mapToDto)
+                .switchIfEmpty(Mono.error(new NotFoundException("Room", id)));
     }
 
-    public RoomDto getRoomByNumber(String roomNumber) {
+    @Transactional(readOnly = true)
+    public Mono<RoomDto> getRoomByNumber(String roomNumber) {
         log.info("Fetching room by number: {}", roomNumber);
 
-        Room room = roomRepository.findByRoomNumber(roomNumber)
-                .orElseThrow(() -> new NotFoundException("Room with number: " + roomNumber));
-
-        return mapToDto(room);
+        return roomRepository.findByRoomNumber(roomNumber)
+                .map(this::mapToDto)
+                .switchIfEmpty(Mono.error(new NotFoundException("Room with number: " + roomNumber)));
     }
 
-    public Page<RoomDto> getAllRooms(Pageable pageable) {
-        log.info("Fetching all rooms with pagination");
-        return roomRepository.findByActiveTrue(pageable)
+    @Transactional(readOnly = true)
+    public Flux<RoomDto> getAllRooms() {
+        log.info("Fetching all rooms");
+        return roomRepository.findByActiveTrue()
                 .map(this::mapToDto);
     }
 
-    public List<RoomDto> getAvailableRooms() {
+    @Transactional(readOnly = true)
+    public Flux<RoomDto> getAvailableRooms() {
         log.info("Fetching available rooms");
         return roomRepository.findByAvailableTrueAndActiveTrue()
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
-    public List<RoomDto> getAvailableRoomsByType(RoomType roomType) {
+    @Transactional(readOnly = true)
+    public Flux<RoomDto> getAvailableRoomsByType(RoomType roomType) {
         log.info("Fetching available rooms of type: {}", roomType);
         return roomRepository.findAvailableRoomsByType(roomType)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
-    public List<RoomDto> getRoomsByType(RoomType roomType) {
+    @Transactional(readOnly = true)
+    public Flux<RoomDto> getRoomsByType(RoomType roomType) {
         log.info("Fetching rooms of type: {}", roomType);
         return roomRepository.findByRoomTypeAndActiveTrue(roomType)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
-    public List<RoomDto> getRoomsByFloor(String floor) {
+    @Transactional(readOnly = true)
+    public Flux<RoomDto> getRoomsByFloor(String floor) {
         log.info("Fetching rooms on floor: {}", floor);
         return roomRepository.findByFloor(floor)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
     @Transactional
-    @CachePut(value = "rooms", key = "#id")
-    public RoomDto updateRoom(UUID id, UpdateRoomRequest request) {
+    public Mono<RoomDto> updateRoom(UUID id, UpdateRoomRequest request) {
         log.info("Updating room: {}", id);
 
-        Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Room", id));
-
-        if (request.getRoomType() != null) {
-            room.setRoomType(request.getRoomType());
-        }
-        if (request.getCapacity() != null) {
-            if (request.getCapacity() < room.getCurrentOccupancy()) {
-                throw new ValidationException("Cannot reduce capacity below current occupancy");
-            }
-            room.setCapacity(request.getCapacity());
-        }
-        if (request.getDailyRate() != null) {
-            room.setDailyRate(request.getDailyRate());
-        }
-        if (request.getFloor() != null) {
-            room.setFloor(request.getFloor());
-        }
-        if (request.getWing() != null) {
-            room.setWing(request.getWing());
-        }
-        if (request.getDescription() != null) {
-            room.setDescription(request.getDescription());
-        }
-        if (request.getAvailable() != null) {
-            room.setAvailable(request.getAvailable());
-        }
-
-        room = roomRepository.save(room);
-        log.info("Updated room: {}", room.getId());
-
-        return mapToDto(room);
+        return roomRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Room", id)))
+                .flatMap(room -> {
+                    if (request.getRoomType() != null) {
+                        room.setRoomType(request.getRoomType());
+                    }
+                    if (request.getCapacity() != null) {
+                        if (request.getCapacity() < room.getCurrentOccupancy()) {
+                            return Mono.error(new ValidationException("Cannot reduce capacity below current occupancy"));
+                        }
+                        room.setCapacity(request.getCapacity());
+                    }
+                    if (request.getDailyRate() != null) {
+                        room.setDailyRate(request.getDailyRate());
+                    }
+                    if (request.getFloor() != null) {
+                        room.setFloor(request.getFloor());
+                    }
+                    if (request.getWing() != null) {
+                        room.setWing(request.getWing());
+                    }
+                    if (request.getDescription() != null) {
+                        room.setDescription(request.getDescription());
+                    }
+                    if (request.getAvailable() != null) {
+                        room.setAvailable(request.getAvailable());
+                    }
+                    return roomRepository.save(room);
+                })
+                .map(this::mapToDto)
+                .doOnSuccess(dto -> log.info("Updated room: {}", dto.getId()));
     }
 
     @Transactional
-    @CacheEvict(value = "rooms", key = "#id")
-    public void deleteRoom(UUID id) {
+    public Mono<Void> deleteRoom(UUID id) {
         log.info("Soft deleting room: {}", id);
 
-        Room room = roomRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Room", id));
-
-        if (room.getCurrentOccupancy() > 0) {
-            throw new ValidationException("Cannot delete room with active occupants");
-        }
-
-        room.setActive(false);
-        room.setAvailable(false);
-        roomRepository.save(room);
-
-        log.info("Soft deleted room: {}", id);
+        return roomRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Room", id)))
+                .flatMap(room -> {
+                    if (room.getCurrentOccupancy() > 0) {
+                        return Mono.error(new ValidationException("Cannot delete room with active occupants"));
+                    }
+                    room.setActive(false);
+                    room.setAvailable(false);
+                    return roomRepository.save(room);
+                })
+                .doOnSuccess(room -> log.info("Soft deleted room: {}", id))
+                .then();
     }
 
-    public long countAvailableRooms() {
-        return roomRepository.countAvailableRooms();
+    @Transactional(readOnly = true)
+    public Mono<Long> countAvailableRooms() {
+        return roomRepository.countAvailableRooms()
+                .defaultIfEmpty(0L);
     }
 
-    public Long countAvailableBeds() {
-        Long count = roomRepository.countAvailableBeds();
-        return count != null ? count : 0L;
+    @Transactional(readOnly = true)
+    public Mono<Long> countAvailableBeds() {
+        return roomRepository.countAvailableBeds()
+                .defaultIfEmpty(0L);
     }
 
     private RoomDto mapToDto(Room room) {

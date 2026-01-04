@@ -11,8 +11,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.UUID;
 
@@ -32,70 +32,65 @@ public class AuthController {
      * Register a new user (patient or doctor)
      */
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public Mono<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Registration request for email: {}", request.getEmail());
 
-        AuthResponse response = authService.register(request);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(ApiResponse.success("User registered successfully", response));
+        return authService.register(request)
+                .map(response -> ApiResponse.success("User registered successfully", response));
     }
 
     /**
      * Login endpoint
      */
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+    public Mono<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         log.info("Login request for email: {}", request.getEmail());
 
-        AuthResponse response = authService.login(request);
-
-        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+        return authService.login(request)
+                .map(response -> ApiResponse.success("Login successful", response));
     }
 
     /**
      * Validate token endpoint (for internal service calls)
      */
     @GetMapping("/validate")
-    public ResponseEntity<ApiResponse<Boolean>> validateToken(@RequestHeader("Authorization") String authHeader) {
+    public Mono<ApiResponse<Boolean>> validateToken(@RequestHeader("Authorization") String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            return ResponseEntity.ok(ApiResponse.success(false));
+            return Mono.just(ApiResponse.success(false));
         }
         String token = authHeader.substring(7);
         boolean isValid = jwtUtils.validateToken(token);
-        return ResponseEntity.ok(ApiResponse.success(isValid));
+        return Mono.just(ApiResponse.success(isValid));
     }
 
     /**
      * Get user by ID (authenticated endpoint)
      */
     @GetMapping("/users/{userId}")
-    public ResponseEntity<ApiResponse<UserDto>> getUserById(@PathVariable UUID userId) {
+    public Mono<ApiResponse<UserDto>> getUserById(@PathVariable UUID userId) {
         log.info("Fetching user with ID: {}", userId);
 
-        UserDto user = authService.getUserById(userId);
-
-        return ResponseEntity.ok(ApiResponse.success(user));
+        return authService.getUserById(userId)
+                .map(ApiResponse::success);
     }
 
     /**
      * Get user by email (authenticated endpoint)
      */
     @GetMapping("/users/email/{email}")
-    public ResponseEntity<ApiResponse<UserDto>> getUserByEmail(@PathVariable String email) {
+    public Mono<ApiResponse<UserDto>> getUserByEmail(@PathVariable String email) {
         log.info("Fetching user with email: {}", email);
 
-        UserDto user = authService.getUserByEmail(email);
-
-        return ResponseEntity.ok(ApiResponse.success(user));
+        return authService.getUserByEmail(email)
+                .map(ApiResponse::success);
     }
 
     /**
      * Health check endpoint
      */
     @GetMapping("/health")
-    public ResponseEntity<String> health() {
-        return ResponseEntity.ok("Auth Service is running");
+    public Mono<String> health() {
+        return Mono.just("Auth Service is running");
     }
 }

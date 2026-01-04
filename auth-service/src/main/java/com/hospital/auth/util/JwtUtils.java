@@ -19,7 +19,7 @@ import java.util.Map;
  * Uses a shared secret key across all services
  */
 @Slf4j
-@Component
+@Component("authJwtUtils")
 public class JwtUtils {
 
     @Value("${jwt.secret}")

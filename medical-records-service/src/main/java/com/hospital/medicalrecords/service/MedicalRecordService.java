@@ -3,23 +3,18 @@ package com.hospital.medicalrecords.service;
 import com.hospital.common.exception.NotFoundException;
 import com.hospital.medicalrecords.dto.*;
 import com.hospital.medicalrecords.entity.MedicalRecord;
-import com.hospital.medicalrecords.event.MedicalRecordEventPublisher;
 import com.hospital.medicalrecords.repository.MedicalRecordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -27,11 +22,11 @@ import java.util.stream.Collectors;
 public class MedicalRecordService {
 
     private final MedicalRecordRepository medicalRecordRepository;
-    private final MedicalRecordEventPublisher eventPublisher;
     private final ModelMapper modelMapper;
+    private final WebClient webClient;
 
     @Transactional
-    public MedicalRecordDto createMedicalRecord(CreateMedicalRecordRequest request) {
+    public Mono<MedicalRecordDto> createMedicalRecord(CreateMedicalRecordRequest request) {
         log.info("Creating medical record for patient: {}", request.getPatientId());
 
         MedicalRecord record = MedicalRecord.builder()
@@ -50,123 +45,120 @@ public class MedicalRecordService {
                 .active(true)
                 .build();
 
-        record = medicalRecordRepository.save(record);
-        eventPublisher.publishMedicalRecordCreated(record);
-
-        log.info("Created medical record with ID: {}", record.getId());
-        return mapToDto(record);
+        return medicalRecordRepository.save(record)
+                .map(this::mapToDto)
+                .doOnSuccess(dto -> {
+                    log.info("Created medical record with ID: {}", dto.getId());
+                    notifyMedicalRecordCreated(dto).subscribe();
+                });
     }
 
-    @Cacheable(value = "medicalRecords", key = "#id")
-    public MedicalRecordDto getMedicalRecordById(UUID id) {
+    @Transactional(readOnly = true)
+    public Mono<MedicalRecordDto> getMedicalRecordById(UUID id) {
         log.info("Fetching medical record by ID: {}", id);
 
-        MedicalRecord record = medicalRecordRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Medical record", id));
-
-        return mapToDto(record);
+        return medicalRecordRepository.findById(id)
+                .map(this::mapToDto)
+                .switchIfEmpty(Mono.error(new NotFoundException("Medical record", id)));
     }
 
-    public Page<MedicalRecordDto> getAllMedicalRecords(Pageable pageable) {
-        log.info("Fetching all medical records with pagination");
-        return medicalRecordRepository.findByActiveTrue(pageable)
+    @Transactional(readOnly = true)
+    public Flux<MedicalRecordDto> getAllMedicalRecords() {
+        log.info("Fetching all medical records");
+        return medicalRecordRepository.findByActiveTrue()
                 .map(this::mapToDto);
     }
 
-    public List<MedicalRecordDto> getMedicalRecordsByPatientId(UUID patientId) {
+    @Transactional(readOnly = true)
+    public Flux<MedicalRecordDto> getMedicalRecordsByPatientId(UUID patientId) {
         log.info("Fetching medical records for patient: {}", patientId);
         return medicalRecordRepository.findByPatientIdAndActiveTrue(patientId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
-    public List<MedicalRecordDto> getMedicalRecordsByDoctorId(UUID doctorId) {
+    @Transactional(readOnly = true)
+    public Flux<MedicalRecordDto> getMedicalRecordsByDoctorId(UUID doctorId) {
         log.info("Fetching medical records for doctor: {}", doctorId);
         return medicalRecordRepository.findByDoctorIdAndActiveTrue(doctorId)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
-    public List<MedicalRecordDto> getMedicalRecordsByPatientIdAndDateRange(
+    @Transactional(readOnly = true)
+    public Flux<MedicalRecordDto> getMedicalRecordsByPatientIdAndDateRange(
             UUID patientId, LocalDate startDate, LocalDate endDate) {
         log.info("Fetching medical records for patient {} between {} and {}", patientId, startDate, endDate);
         return medicalRecordRepository.findByPatientIdAndDateRange(patientId, startDate, endDate)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
-    public List<MedicalRecordDto> searchByDiagnosis(UUID patientId, String diagnosis) {
+    @Transactional(readOnly = true)
+    public Flux<MedicalRecordDto> searchByDiagnosis(UUID patientId, String diagnosis) {
         log.info("Searching medical records for patient {} with diagnosis containing: {}", patientId, diagnosis);
         return medicalRecordRepository.findByPatientIdAndDiagnosis(patientId, diagnosis)
-                .stream()
-                .map(this::mapToDto)
-                .collect(Collectors.toList());
+                .map(this::mapToDto);
     }
 
     @Transactional
-    @CachePut(value = "medicalRecords", key = "#id")
-    public MedicalRecordDto updateMedicalRecord(UUID id, UpdateMedicalRecordRequest request) {
+    public Mono<MedicalRecordDto> updateMedicalRecord(UUID id, UpdateMedicalRecordRequest request) {
         log.info("Updating medical record: {}", id);
 
-        MedicalRecord record = medicalRecordRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Medical record", id));
-
-        if (request.getDiagnosis() != null) {
-            record.setDiagnosis(request.getDiagnosis());
-        }
-        if (request.getSymptoms() != null) {
-            record.setSymptoms(request.getSymptoms());
-        }
-        if (request.getTreatment() != null) {
-            record.setTreatment(request.getTreatment());
-        }
-        if (request.getNotes() != null) {
-            record.setNotes(request.getNotes());
-        }
-        if (request.getBloodPressure() != null) {
-            record.setBloodPressure(request.getBloodPressure());
-        }
-        if (request.getTemperature() != null) {
-            record.setTemperature(request.getTemperature());
-        }
-        if (request.getHeartRate() != null) {
-            record.setHeartRate(request.getHeartRate());
-        }
-        if (request.getWeight() != null) {
-            record.setWeight(request.getWeight());
-        }
-        if (request.getHeight() != null) {
-            record.setHeight(request.getHeight());
-        }
-
-        record = medicalRecordRepository.save(record);
-        log.info("Updated medical record: {}", record.getId());
-
-        return mapToDto(record);
+        return medicalRecordRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Medical record", id)))
+                .flatMap(record -> {
+                    if (request.getDiagnosis() != null) {
+                        record.setDiagnosis(request.getDiagnosis());
+                    }
+                    if (request.getSymptoms() != null) {
+                        record.setSymptoms(request.getSymptoms());
+                    }
+                    if (request.getTreatment() != null) {
+                        record.setTreatment(request.getTreatment());
+                    }
+                    if (request.getNotes() != null) {
+                        record.setNotes(request.getNotes());
+                    }
+                    if (request.getBloodPressure() != null) {
+                        record.setBloodPressure(request.getBloodPressure());
+                    }
+                    if (request.getTemperature() != null) {
+                        record.setTemperature(request.getTemperature());
+                    }
+                    if (request.getHeartRate() != null) {
+                        record.setHeartRate(request.getHeartRate());
+                    }
+                    if (request.getWeight() != null) {
+                        record.setWeight(request.getWeight());
+                    }
+                    if (request.getHeight() != null) {
+                        record.setHeight(request.getHeight());
+                    }
+                    return medicalRecordRepository.save(record);
+                })
+                .map(this::mapToDto)
+                .doOnSuccess(dto -> log.info("Updated medical record: {}", dto.getId()));
     }
 
     @Transactional
-    @CacheEvict(value = "medicalRecords", key = "#id")
-    public void deleteMedicalRecord(UUID id) {
+    public Mono<Void> deleteMedicalRecord(UUID id) {
         log.info("Soft deleting medical record: {}", id);
 
-        MedicalRecord record = medicalRecordRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Medical record", id));
-
-        record.setActive(false);
-        medicalRecordRepository.save(record);
-
-        log.info("Soft deleted medical record: {}", id);
+        return medicalRecordRepository.findById(id)
+                .switchIfEmpty(Mono.error(new NotFoundException("Medical record", id)))
+                .flatMap(record -> {
+                    record.setActive(false);
+                    return medicalRecordRepository.save(record);
+                })
+                .doOnSuccess(record -> log.info("Soft deleted medical record: {}", id))
+                .then();
     }
 
-    public long countByPatientId(UUID patientId) {
+    @Transactional(readOnly = true)
+    public Mono<Long> countByPatientId(UUID patientId) {
         return medicalRecordRepository.countByPatientIdAndActiveTrue(patientId);
     }
 
-    public long countByDoctorId(UUID doctorId) {
+    @Transactional(readOnly = true)
+    public Mono<Long> countByDoctorId(UUID doctorId) {
         return medicalRecordRepository.countByDoctorIdAndActiveTrue(doctorId);
     }
 
@@ -186,5 +178,17 @@ public class MedicalRecordService {
         }
 
         return dto;
+    }
+
+    private Mono<Void> notifyMedicalRecordCreated(MedicalRecordDto record) {
+        return webClient.post()
+                .uri("http://notification-service/api/notifications/medical-record-created")
+                .bodyValue(record)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .onErrorResume(e -> {
+                    log.warn("Failed to notify medical record creation: {}", e.getMessage());
+                    return Mono.empty();
+                });
     }
 }
